@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="280" viewBox="0 0 1200 280" role="img" aria-label="iFlyProof 转写校对工作台">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#b23a2e"/>
+      <stop offset="1" stop-color="#6f241c"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="280" fill="url(#bg)"/>
+  <g fill="#ffffff" opacity="0.22">
+    <rect x="860" y="120" width="14" height="40" rx="7"/>
+    <rect x="890" y="96" width="14" height="88" rx="7"/>
+    <rect x="920" y="72" width="14" height="136" rx="7"/>
+    <rect x="950" y="100" width="14" height="80" rx="7"/>
+    <rect x="980" y="60" width="14" height="160" rx="7"/>
+    <rect x="1010" y="92" width="14" height="96" rx="7"/>
+    <rect x="1040" y="116" width="14" height="48" rx="7"/>
+    <rect x="1070" y="80" width="14" height="120" rx="7"/>
+  </g>
+  <text x="80" y="142" font-family="PingFang SC, Hiragino Sans GB, Microsoft YaHei, sans-serif" font-size="60" font-weight="800" fill="#ffffff" letter-spacing="1">iFlyProof</text>
+  <text x="82" y="190" font-family="PingFang SC, Hiragino Sans GB, Microsoft YaHei, sans-serif" font-size="22" fill="#f6e7e2" letter-spacing="2">转写校对工作台 · 本地优先 · 讯飞听见分享稿</text>
+  <text x="82" y="226" font-family="ui-monospace, Menlo, monospace" font-size="14" fill="#e7c9c2" letter-spacing="1">TRANSCRIBE · PROOF · SHIP</text>
+</svg>

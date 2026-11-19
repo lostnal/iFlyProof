@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/screenshots/banner.svg" alt="iFlyProof" width="100%">
+</p>
+
 # iFlyProof · 转写校对工作台
 
 > 把讯飞听见的分享链接，变成一份可编辑、可回放、可导出的转写稿。
@@ -50,6 +54,15 @@ iFlyProof 是一个**本地运行**的转写稿校对工具：粘贴讯飞听见
 - **纯本地**：无数据库、无账号、无云端，转写稿存在浏览器，音频缓存在 IndexedDB。
 
 ---
+
+## 截图
+
+> 截图占位：把首页、编辑页截图分别放到 `docs/screenshots/home.png`、`editor.png`，然后取消下面的注释即可。
+
+<!--
+![首页](docs/screenshots/home.png)
+![编辑页](docs/screenshots/editor.png)
+-->
 
 ## 快速开始
 
