@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+_diarvenv/
+_diarmodels/
+_asrvenv/
+_env312/
+_deps/
+
+# 运行时数据（音频、模型、日志、项目文件）
+*.wav
+*.mp3
+*.m4a
+*.mp4
+*.trp
+recording_16k.wav
+server.log
+
+# 临时/调试文件（下划线开头的脚本、抓包结果等）
+_*
+.DS_Store
+*.swp
+.vscode/
+.idea/

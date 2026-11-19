@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>iFlyProof · 转写校对工作台</title>
+<style>
+  :root{
+    --bg:#f4f1ea; --panel:#fffdf8; --ink:#2c2a26; --muted:#8b8377;
+    --accent:#b23a2e; --accent-soft:#f8e9e5; --line:#e6dfd2; --spk:#8d7a63;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;height:100%;}
+  body{font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink);height:100vh;overflow:hidden;}
+  .hidden{display:none !important;}
+
+  /* ---------- 首页 ---------- */
+  #landing{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#f4f1ea;z-index:100;overflow:auto;padding:24px;}
+  .landing-glow{position:absolute;inset:0;pointer-events:none;background:
+    radial-gradient(640px 320px at 50% -10%, rgba(178,58,46,.10), transparent 70%),
+    radial-gradient(520px 300px at 85% 110%, rgba(141,122,99,.10), transparent 70%);}
+  .landing-card{position:relative;width:min(560px,100%);background:#fffdf8;border:1px solid var(--line);border-radius:22px;box-shadow:0 20px 60px rgba(80,60,40,.12);padding:34px 34px 26px;}
+  .logo-wrap{display:flex;flex-direction:column;align-items:center;gap:12px;margin-bottom:22px;}
+  .logo-mark{width:84px;height:84px;border-radius:22px;background:linear-gradient(145deg,#b23a2e,#8f2c22);display:flex;align-items:center;justify-content:center;box-shadow:0 12px 28px rgba(178,58,46,.28);flex:0 0 auto;}
+  .logo-mark svg{width:50px;height:50px;}
+  .brand-block{display:flex;flex-direction:column;align-items:center;}
+  .brand{font-size:20px;font-weight:800;letter-spacing:1px;color:#3a332b;line-height:1.1;}
+  .brand-sub{font-size:11px;color:var(--muted);letter-spacing:2px;margin-top:3px;}
+  .landing-title{font-size:16px;font-weight:600;color:#4a4238;margin:0 0 16px;line-height:1.5;}
+  .paste-box{display:flex;gap:10px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:7px 7px 7px 16px;transition:border-color .15s,box-shadow .15s;}
+  .paste-box:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(178,58,46,.1);}
+  .paste-box input{flex:1 1 auto;border:none;outline:none;font-size:14px;font-family:inherit;background:transparent;color:var(--ink);min-width:0;}
+  .paste-box input::placeholder{color:#b7ac9d;}
+  .plus{border:1px solid var(--line);background:#fbf8f1;color:#6b5c48;font-size:14px;line-height:1;border-radius:8px;padding:6px 9px;cursor:pointer;font-family:inherit;}
+  .plus:disabled{opacity:.4;cursor:default;}
+  .plus:hover{background:#f1e9dd;color:var(--accent);}
+  .extra-row{display:flex;gap:8px;margin-top:8px;}
+  .extra-row input{flex:1 1 auto;min-width:0;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13px;font-family:inherit;background:#fff;}
+  .extra-row .del{border:1px solid var(--line);background:#fffdf8;color:#a06a5a;border-radius:9px;padding:0 12px;cursor:pointer;font-size:16px;}
+  #parseBtn{border:none;background:var(--accent);color:#fff;font-family:inherit;font-size:14px;font-weight:600;padding:10px 18px;border-radius:10px;cursor:pointer;white-space:nowrap;}
+  #parseBtn:hover{filter:brightness(1.08);}
+  #parseBtn:disabled{opacity:.5;cursor:default;}
+  .msg{min-height:20px;margin:10px 2px 0;font-size:12.5px;color:var(--muted);}
+  .msg.err{color:var(--accent);}
+  .landing-links{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:10px;margin-top:16px;}
+  #continueRow{display:contents;}
+  .link-btn{width:100%;border:1px solid var(--line);border-radius:10px;background:#fbf8f1;color:#6b5c48;font-family:inherit;font-size:12.5px;cursor:pointer;padding:9px 8px;text-align:center;white-space:nowrap;}
+  .link-btn:hover{background:#f1e9dd;color:var(--accent);border-color:#e6bcb3;}
+  .hist-panel{margin-top:10px;max-height:220px;overflow:auto;background:#fbf8f1;border:1px solid var(--line);border-radius:12px;padding:6px;}
+  .hist-panel.hidden{display:none;}
+  .hist-item{padding:8px 10px;border-radius:8px;cursor:pointer;font-size:12.5px;color:#4a443b;display:flex;flex-direction:column;gap:3px;}
+  .hist-item:hover{background:#f1e9dd;}
+  .hist-item small{color:var(--muted);font-size:10.5px;}
+  .landing-foot{margin-top:20px;padding-top:14px;border-top:1px dashed var(--line);font-size:11px;color:#b0a595;text-align:center;}
+
+  /* ---------- 编辑界面 ---------- */
+  #editor{display:flex;height:100vh;overflow:hidden;}
+  .col{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;height:100%;}
+  aside{flex:0 0 262px;width:262px;border-left:1px solid var(--line);background:#fbf8f1;display:flex;flex-direction:column;gap:8px;padding:12px 12px 10px;height:100%;overflow:hidden;}
+  header{flex:0 0 auto;padding:12px 22px 8px;background:linear-gradient(180deg,#fffdf8,#f8f4ea);border-bottom:1px solid var(--line);}
+  .head-row{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;}
+  h1.doc{margin:0;font-size:16px;font-weight:800;letter-spacing:.3px;}
+  .doc-sub{font-size:11.5px;color:var(--muted);margin-top:4px;}
+  .tools{display:flex;align-items:center;gap:7px;flex-wrap:wrap;justify-content:flex-end;}
+  .ghost{font-size:12px;color:#6b5c48;background:#fffdf8;border:1px solid var(--line);border-radius:6px;padding:5px 9px;cursor:pointer;font-family:inherit;white-space:nowrap;}
+  .ghost:hover{background:#f3ece0;}
+  .ghost.armed{background:var(--accent);color:#fff;border-color:var(--accent);}
+  #splitHint{display:none;font-size:11.5px;color:var(--accent);margin-top:6px;}
+  #splitHint.show{display:block;}
+  main{flex:1 1 auto;overflow-y:auto;padding:14px 22px 26px;}
+  .entry{display:flex;gap:10px;padding:8px 10px;border-radius:7px;cursor:pointer;border:1px solid transparent;transition:background .12s,border-color .12s;}
+  .entry:hover{background:#efe8db;}
+  .entry.active{background:var(--accent-soft);border-color:#e6bcb3;}
+  .entry.selected{background:#f3ded8;border-color:#d59b8f;box-shadow:inset 3px 0 0 var(--accent);}
+  .entry.edited{box-shadow:inset 3px 0 0 #e6bcb3;}
+  .entry .time{flex:0 0 62px;font-size:12px;color:var(--accent);padding-top:2px;font-family:ui-monospace,Menlo,Consolas,monospace;font-variant-numeric:tabular-nums;}
+  .entry .spk{flex:0 0 auto;align-self:flex-start;font-size:11.5px;color:#fff;background:var(--spk);border-radius:3px;padding:1px 7px;margin-top:1px;white-space:nowrap;cursor:pointer;}
+  .entry .txt{flex:1 1 auto;font-family:"Songti SC","SimSun","Noto Serif SC",serif;font-size:15px;line-height:1.78;word-break:break-word;}
+  .entry .txt.editing{outline:2px solid var(--accent);outline-offset:2px;background:#fff;border-radius:3px;cursor:text;}
+  .entry .edit{flex:0 0 auto;border:none;background:transparent;color:#b3a184;cursor:pointer;font-size:13px;padding:2px 5px;opacity:0;border-radius:4px;font-family:inherit;}
+  .entry:hover .edit{opacity:1;}
+  .entry .edit:hover{color:var(--accent);background:#f3ece0;}
+  .spk-inline{flex:0 0 auto;font-family:inherit;font-size:11.5px;width:86px;border:1px solid var(--accent);border-radius:3px;padding:1px 5px;background:#fff;color:var(--ink);}
+  .spk-inline:focus{outline:none;}
+
+  footer{flex:0 0 auto;border-top:1px solid var(--line);background:#fffdf8;padding:9px 22px 12px;}
+  .now{font-family:"Songti SC","SimSun",serif;font-size:12.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:6px;min-height:18px;}
+  .controls{display:flex;align-items:center;gap:12px;}
+  #playBtn{width:38px;height:38px;border-radius:50%;border:none;background:var(--accent);color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex:0 0 auto;}
+  #playBtn:hover{filter:brightness(1.08);}
+  .skip{flex:0 0 auto;border:1px solid var(--line);background:#fffdf8;color:#6b5c48;border-radius:18px;padding:6px 10px;font-size:12px;cursor:pointer;font-family:inherit;}
+  .skip:hover{background:#f3ece0;}
+  .times{font-size:12px;color:var(--muted);font-family:ui-monospace,Menlo,Consolas,monospace;white-space:nowrap;flex:0 0 auto;}
+  #progress{position:relative;flex:1 1 auto;height:22px;cursor:pointer;touch-action:none;}
+  #progress .track{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);height:5px;background:#e9e1d3;border-radius:3px;}
+  #progress .fill{position:absolute;left:0;top:50%;transform:translateY(-50%);height:5px;background:var(--accent);border-radius:3px;width:0%;}
+  #progress .thumb{position:absolute;top:50%;left:0%;transform:translate(-50%,-50%);width:13px;height:13px;background:#fff;border:2px solid var(--accent);border-radius:50%;pointer-events:none;}
+
+  /* 侧栏 */
+  .side-title{font-size:13px;font-weight:700;color:#7a4a3f;}
+  .side-hint{font-size:11px;color:var(--muted);line-height:1.5;}
+  .spk-list{flex:1 1 auto;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:6px;}
+  .spk-row{display:flex;align-items:center;gap:5px;}
+  .spk-lab{flex:0 0 52px;font-size:11.5px;color:var(--muted);}
+  .spk-input{flex:1 1 auto;font-family:inherit;font-size:12px;padding:4px 6px;border:1px solid var(--line);border-radius:5px;background:#fff;min-width:0;}
+  .spk-input:focus{outline:none;border-color:var(--accent);}
+  .mini{flex:0 0 auto;border:1px solid var(--line);background:#fffdf8;color:#6b5c48;border-radius:5px;padding:3px 6px;font-size:11px;cursor:pointer;font-family:inherit;}
+  .mini:hover{background:#f3ece0;}
+  .mini.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .brush-state{display:none;font-size:11.5px;color:var(--accent);}
+  .brush-state.show{display:block;}
+
+  /* 浮层 */
+  .ctx{position:fixed;z-index:60;min-width:92px;background:#fffdf8;border:1px solid var(--line);border-radius:8px;box-shadow:0 8px 24px rgba(60,45,30,.18);padding:4px;display:none;}
+  .ctx.open{display:block;}
+  .ctx button{display:block;width:100%;text-align:left;border:none;background:transparent;font-family:inherit;font-size:13px;color:var(--ink);padding:7px 10px;border-radius:5px;cursor:pointer;}
+  .ctx button:hover{background:#f3ece0;}
+  .ctx button.danger{color:var(--accent);}
+  .batchbar{position:fixed;left:calc(50% - 131px);bottom:82px;transform:translateX(-50%);display:none;align-items:center;gap:8px;background:#2c2a26;color:#fff;padding:7px 10px 7px 14px;border-radius:22px;box-shadow:0 6px 20px rgba(0,0,0,.25);z-index:50;font-size:12px;pointer-events:none;}
+  .batchbar.show{display:flex;}
+  .batchbar button{border:none;border-radius:16px;padding:5px 10px;font-family:inherit;font-size:12px;cursor:pointer;pointer-events:auto;}
+  #batchConfirm{background:var(--accent);color:#fff;}
+  #batchConfirm:disabled{opacity:.45;cursor:default;}
+  #batchCancel{background:#4a463f;color:#fff;}
+  audio{display:none;}
+  .hist-block{margin-top:12px; text-align:left;}
+  .hist-toggle{border:none; background:transparent; color:var(--muted); font-family:inherit; font-size:12px; cursor:pointer; text-decoration:underline; padding:0;}
+  .hist-toggle:hover{color:var(--accent);}
+  .hist-panel{margin-top:8px; max-height:210px; overflow:auto; background:#fffdf8; border:1px solid var(--line); border-radius:10px; padding:6px;}
+  .hist-panel.hidden{display:none;}
+  .hist-item{padding:7px 8px; border-radius:6px; cursor:pointer; font-size:12px; color:#4a443b; display:flex; flex-direction:column; gap:2px;}
+  .hist-item:hover{background:#f3ece0;}
+  .hist-item small{color:var(--muted); font-size:10.5px;}
+  @media (max-width:820px){
+    aside{width:200px;flex-basis:200px;}
+    main{padding:10px 12px 22px;} header{padding:10px 12px 6px;} footer{padding:8px 12px 10px;}
+    .head-row{flex-direction:column;gap:6px;} .tools{justify-content:flex-start;}
+  }
+</style>
+</head>
+<body>
+
+<!-- 首页 -->
+<div id="landing">
+  <div class="landing-glow"></div>
+  <div class="landing-card">
+    <div class="logo-wrap">
+      <div class="logo-mark">
+        <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M10 32h6M18 24v16M26 18v28M34 26v12M42 20v24M50 28v8" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="brand-block">
+        <div class="brand">iFlyProof</div>
+        <div class="brand-sub">转写校对工作台</div>
+      </div>
+    </div>
+    <h2 class="landing-title">粘贴讯飞听见分享链接，进入可编辑转写稿</h2>
+    <div class="paste-box">
+      <input id="shareUrl" placeholder="https://shareaudio.iflyrec.com/appShare/share.html?audioId=..." autocomplete="off">
+      <button id="parseBtn">解析并打开</button>
+      <button id="addLinkBtn" type="button" class="plus" title="添加链接（最多 3 个）">＋</button>
+    </div>
+    <div id="extraLinks"></div>
+    <div id="parseMsg" class="msg"></div>
+    <div class="landing-links">
+      <button id="histBtn" class="link-btn" type="button" title="查看最近 10 个分享链接">历史链接</button>
+      <button id="openProjLandingBtn" class="link-btn" type="button" title="打开 .trp 项目文件">打开项目</button>
+      <span id="continueRow" class="hidden"><button id="continueBtn" class="link-btn" type="button" title="恢复上次编辑">继续编辑</button></span>
+    </div>
+    <div id="histPanel" class="hist-panel hidden">
+      <div id="histList"></div>
+    </div>
+    <div class="landing-foot">本地工作台 · 转写与音频只保存在你的浏览器</div>
+  </div>
+</div>
+
+<!-- 编辑界面 -->
+<div id="editor" class="hidden">
+  <div class="col">
+    <header>
+      <div class="head-row">
+        <div>
+          <h1 class="doc" id="docTitle">未命名</h1>
+          <div class="doc-sub" id="docSub"></div>
+        </div>
+        <div class="tools">
+          <label class="ghost">倍速
+            <select id="rate" style="border:none;background:transparent;font-family:inherit;font-size:12px;">
+              <option value="0.75">0.75×</option>
+              <option value="1" selected>1×</option>
+              <option value="1.25">1.25×</option>
+              <option value="1.5">1.5×</option>
+              <option value="2">2×</option>
+            </select>
+          </label>
+          <button id="splitBtn" class="ghost" type="button">分段</button>
+          <button id="undoBtn" class="ghost" type="button" title="撤销 (Ctrl/⌘+Z)">撤销</button>
+          <button id="saveProjBtn" class="ghost" type="button">保存项目</button>
+          <button id="openProjBtn" class="ghost" type="button">打开项目</button>
+          <input id="projFile" type="file" accept=".trp,application/octet-stream" hidden>
+          <button id="diarBtn" class="ghost" type="button">自动分说话人</button>
+          <button id="exportBtn" class="ghost" type="button">导出文本</button>
+          <button id="reimportBtn" class="ghost" type="button">返回首页</button>
+        </div>
+      </div>
+      <div id="splitHint">分段模式：在任意一句话里选中文字，松手后即从选区起点拆成两句。</div>
+    </header>
+    <main id="list"></main>
+    <footer>
+      <div class="now" id="now">准备就绪。</div>
+      <div class="controls">
+        <button id="back5" class="skip" type="button">−5s</button>
+        <button id="playBtn" type="button">▶</button>
+        <button id="fwd5" class="skip" type="button">+5s</button>
+        <span class="times"><span id="cur">00:00:00</span> / <span id="dur">--:--:--</span></span>
+        <div id="progress"><div class="track"></div><div class="fill" id="fill"></div><div class="thumb" id="thumb"></div></div>
+      </div>
+      <audio id="audio" preload="metadata"></audio>
+    </footer>
+  </div>
+  <aside>
+    <div class="side-title">说话人对照</div>
+    <div class="side-hint">改名字后全文实时同步；「替换」可合并/改名，「刷」后拖选可刷一片发言人。</div>
+    <div id="spkList" class="spk-list"></div>
+    <div id="brushState" class="brush-state"></div>
+    <div><button id="refreshSpkBtn" class="ghost" type="button">刷新说话人</button> <button id="clearBtn" class="ghost" type="button">恢复到讯飞原有版本</button></div>
+  </aside>
+</div>
+
+<div id="ctxMenu" class="ctx">
+  <button type="button" data-act="copySel" id="ctxCopySel">复制所选</button>
+  <button type="button" data-act="copyOne">复制本行</button>
+  <button type="button" data-act="edit">编辑文字</button>
+  <button type="button" data-act="editSpk">编辑发言人</button>
+  <button type="button" data-act="delete" class="danger">删除</button>
+</div>
+<div id="batchBar" class="batchbar">
+  <span id="batchCount">已选 0 条</span>
+  <button id="batchCopyAll" type="button">复制所有信息</button>
+  <button id="batchCopyText" type="button">仅复制内容</button>
+  <button id="batchConfirm" type="button">删除 0 项</button>
+  <button id="batchCancel" type="button">取消</button>
+</div>
+
+<script>
+(function(){
+  'use strict';
+  const $ = id => document.getElementById(id);
+  const landing = $('landing'), editor = $('editor');
+  const listEl = $('list'), audio = $('audio');
+  const playBtn = $('playBtn'), back5 = $('back5'), fwd5 = $('fwd5');
+  const curEl = $('cur'), durEl = $('dur'), fillEl = $('fill'), thumbEl = $('thumb');
+  const progressEl = $('progress'), nowEl = $('now'), rateEl = $('rate');
+  const spkList = $('spkList'), brushState = $('brushState');
+  const splitBtn = $('splitBtn'), splitHint = $('splitHint');
+  const batchBar = $('batchBar');
+  const batchCount = $('batchCount'), batchConfirm = $('batchConfirm'), batchCancel = $('batchCancel');
+  const ctxMenu = $('ctxMenu');
+  const docTitle = $('docTitle'), docSub = $('docSub');
+
+  const LS = 'dsh_workbench_v1';
+  let S = { title:'', url:'', audioUrl:'', audioId:'', duration:0, items:[], names:{} };
+  let utts = [], activeIdx = -1, DURATION = 0;
+  let dirty = false;
+
+  // ---------- 撤销 ----------
+  const undoStack = [];
+  function snapState(){ return JSON.stringify({items:S.items, names:S.names}); }
+  function pushUndo(){
+    undoStack.push(snapState());
+    if (undoStack.length > 80) undoStack.shift();
+  }
+  function undo(){
+    if (!undoStack.length) return;
+    const s = JSON.parse(undoStack.pop());
+    S.items = s.items;
+    S.names = s.names;
+    save();
+    renderAll();
+    if (utts[activeIdx]) updateNow(activeIdx);
+  }
+  function isTyping(){
+    const ae = document.activeElement;
+    return !!(ae && (ae.isContentEditable || ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA'));
+  }
+
+  // ---------- 工具 ----------
+  function fmt(sec){
+    if (!isFinite(sec) || sec < 0) sec = 0;
+    sec = Math.floor(sec);
+    return String(Math.floor(sec/3600)).padStart(2,'0') + ':' +
+           String(Math.floor((sec%3600)/60)).padStart(2,'0') + ':' +
+           String(sec%60).padStart(2,'0');
+  }
+  function nameOf(spk){ return S.names[spk] || ('说话人' + spk); }
+  function displayName(it){ return it.name || nameOf(it.spk); }
+  function save(){ try { localStorage.setItem(LS, JSON.stringify(S)); } catch(e){} dirty = true; scheduleDocSave(); }
+
+  // ---------- 按链接保存历史文档，命中时免重复解析 ----------
+  const DOCKEY = 'dsh_workbench_docs_v1';
+  let docTimer = null;
+  function docKey(st){
+    if (!st) return '';
+    if (st.urls && st.urls.length) return st.urls.join('|');
+    return st.audioId || st.url || '';
+  }
+  function scheduleDocSave(){
+    if (docTimer) clearTimeout(docTimer);
+    docTimer = setTimeout(saveDoc, 600);
+  }
+  function saveDoc(){
+    try {
+      const key = docKey(S);
+      if (!key || !S.items || !S.items.length) return;
+      let docs = {};
+      try { docs = JSON.parse(localStorage.getItem(DOCKEY) || '{}') || {}; } catch(e){}
+      docs[key] = { savedAt: Date.now(), title: S.title || '', state: S };
+      const keys = Object.keys(docs).sort(function(a,b){ return (docs[b].savedAt||0)-(docs[a].savedAt||0); });
+      keys.slice(5).forEach(function(k){ delete docs[k]; });
+      localStorage.setItem(DOCKEY, JSON.stringify(docs));
+    } catch(e){}
+  }
+  function loadDocByUrl(url){
+    const m = url.match(/[?&]audioId=([A-Za-z0-9]+)/);
+    const audioId = m ? m[1] : '';
+    let docs = {};
+    try { docs = JSON.parse(localStorage.getItem(DOCKEY) || '{}') || {}; } catch(e){}
+    if (docs[url]) return docs[url];
+    if (audioId && docs[audioId]) return docs[audioId];
+    return null;
+  }
+  function inHistory(url){
+    try { return loadHistory().some(function(x){ return x.url === url || x.audioId === (url.match(/[?&]audioId=([A-Za-z0-9]+)/)||[])[1]; }); } catch(e){ return false; }
+  }
+
+  // ---------- 渲染 ----------
+  function makeRow(it){
+    const row = document.createElement('div');
+    row.className = 'entry';
+    row.dataset.t = it.t;
+    const tEl = document.createElement('span'); tEl.className='time'; tEl.textContent = it.time || fmt(it.t);
+    const sEl = document.createElement('span'); sEl.className='spk'; sEl.textContent = displayName(it);
+    const xEl = document.createElement('span'); xEl.className='txt'; xEl.textContent = it.text;
+    const eBtn = document.createElement('button'); eBtn.className='edit'; eBtn.type='button'; eBtn.textContent='✎';
+    row.append(tEl, sEl, xEl, eBtn);
+    const u = { t: it.t, el: row, it: it, spkEl: sEl, txtEl: xEl };
+    row._u = u;
+    let clickTimer = null;
+    row.addEventListener('click', function(e){
+      if (suppressClick){ suppressClick = false; return; }
+      if (e.target.closest('.edit')) return;
+      if (row.dataset.editing === '1') return;
+      if (splitArmed || brushNum !== null) return;
+      const cx = e.clientX, cy = e.clientY;
+      const onText = !!e.target.closest('.txt');
+      if (clickTimer){ clearTimeout(clickTimer); clickTimer = null; return; }
+      clickTimer = setTimeout(function(){
+        clickTimer = null;
+        let target = it.t;
+        if (onText){
+          let range = null;
+          if (document.caretRangeFromPoint) range = document.caretRangeFromPoint(cx, cy);
+          else if (document.caretPositionFromPoint){
+            const p = document.caretPositionFromPoint(cx, cy);
+            if (p){ range = document.createRange(); range.setStart(p.offsetNode, p.offset); range.collapse(true); }
+          }
+          if (range && xEl.contains(range.startContainer)){
+            const pre = document.createRange();
+            pre.selectNodeContents(xEl);
+            pre.setEnd(range.startContainer, range.startOffset);
+            const off = pre.toString().length;
+            const total = (xEl.textContent || '').length || 1;
+            const idx = utts.findIndex(function(x){ return x.it === it; });
+            const nextT = (idx >= 0 && utts[idx + 1]) ? utts[idx + 1].t : DURATION;
+            const span = Math.max(1, nextT - it.t);
+            target = it.t + span * Math.min(1, off / total) - 1; // 该字前 1 秒
+          }
+        }
+        if (target < 0) target = 0;
+        jumpTo(target, true);
+      }, 220);
+    });
+    row.addEventListener('dblclick', function(e){
+      if (e.target.closest('.spk')) return;
+      if (e.target.closest('.edit')) return;
+      if (clickTimer){ clearTimeout(clickTimer); clickTimer = null; }
+      e.preventDefault();
+      startEdit(u, {x:e.clientX, y:e.clientY});
+    });
+    eBtn.addEventListener('click', function(e){ e.stopPropagation(); startEdit(u); });
+    sEl.addEventListener('dblclick', function(e){ e.stopPropagation(); startSpkEdit(u); });
+    utts.push(u);
+    return row;
+  }
+  function renderAll(){
+    listEl.innerHTML = '';
+    utts = [];
+    const frag = document.createDocumentFragment();
+    S.items.forEach(function(it){ frag.appendChild(makeRow(it)); });
+    listEl.appendChild(frag);
+    activeIdx = -1;
+    DURATION = S.duration || ((utts.length ? utts[utts.length-1].t : 0) + 60);
+    durEl.textContent = fmt(DURATION);
+    buildSpkPanel();
+  }
+
+  // ---------- 播放同步 ----------
+  function findIndex(t){
+    let lo=0, hi=utts.length-1, ans=0;
+    while(lo<=hi){ const m=(lo+hi)>>1; if(utts[m].t<=t){ans=m;lo=m+1;} else hi=m-1; }
+    return ans;
+  }
+  function updateNow(i){
+    const u = utts[i];
+    if (!u){ nowEl.textContent=''; return; }
+    nowEl.textContent = displayName(u.it) + '：' + u.it.text;
+  }
+  function setActive(i, scroll){
+    if (i<0 || i>=utts.length) return;
+    if (i===activeIdx){ updateNow(i); return; }
+    if (activeIdx>=0 && utts[activeIdx]) utts[activeIdx].el.classList.remove('active');
+    activeIdx = i;
+    utts[i].el.classList.add('active');
+    updateNow(i);
+    if (scroll){
+      const r = utts[i].el.getBoundingClientRect(), mr = listEl.getBoundingClientRect();
+      if (r.top < mr.top+8 || r.bottom > mr.bottom-8) utts[i].el.scrollIntoView({block:'center', behavior:'smooth'});
+    }
+  }
+  function updateBar(t, dur){
+    const ratio = dur>0 ? Math.max(0, Math.min(1, t/dur)) : 0;
+    fillEl.style.width = (ratio*100)+'%';
+    thumbEl.style.left = (ratio*100)+'%';
+    curEl.textContent = fmt(t);
+  }
+  let pendingSeek = null;
+  function safeSeek(t){ if (audio.readyState>=1){ try{ audio.currentTime=t; }catch(e){} } else pendingSeek=t; }
+  function jumpTo(t, play){
+    safeSeek(t); setActive(findIndex(t), true);
+    if (play && audio.paused) audio.play().catch(function(){});
+  }
+
+  // ---------- 编辑文字 ----------
+  function setCaretAtOffset(el, offset){
+    let remaining = offset;
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    let node;
+    while ((node = walker.nextNode())){
+      const len = node.nodeValue.length;
+      if (remaining <= len){
+        const r = document.createRange();
+        r.setStart(node, remaining);
+        r.collapse(true);
+        const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+        return;
+      }
+      remaining -= len;
+    }
+    const r = document.createRange(); r.selectNodeContents(el); r.collapse(false);
+    const sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+  }
+  function placeCaretAtPoint(el, x, y){
+    let range = null;
+    if (document.caretRangeFromPoint) range = document.caretRangeFromPoint(x, y);
+    else if (document.caretPositionFromPoint){
+      const p = document.caretPositionFromPoint(x, y);
+      if (p){ range = document.createRange(); range.setStart(p.offsetNode, p.offset); range.collapse(true); }
+    }
+    if (!range || !el.contains(range.startContainer)) return false;
+    try {
+      const pre = document.createRange();
+      pre.selectNodeContents(el);
+      pre.setEnd(range.startContainer, range.startOffset);
+      let off = pre.toString().length;
+      if (off < el.textContent.length) off += 1; // 光标放到该字后面
+      setCaretAtOffset(el, off);
+      return true;
+    } catch(e){ return false; }
+  }
+  function startEdit(u, pos){
+    const row=u.el, xEl=u.txtEl;
+    if (row.dataset.editing==='1') return;
+    pushUndo();
+    const orig = xEl.textContent;
+    row.dataset.editing='1'; xEl.contentEditable='true'; xEl.classList.add('editing'); xEl.focus();
+    if (!(pos && placeCaretAtPoint(xEl, pos.x, pos.y))){
+      const r=document.createRange(); r.selectNodeContents(xEl); r.collapse(false);
+      const sel=window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+    }
+    const onKey=function(ev){
+      if (ev.isComposing) return;
+      if (ev.key==='Enter' && !ev.shiftKey){ ev.preventDefault(); ev.stopPropagation(); xEl.blur(); }
+      else if (ev.key==='Escape'){ ev.preventDefault(); xEl.textContent=orig; xEl.blur(); }
+    };
+    const onBefore=function(ev){ if (ev.inputType==='insertParagraph'||ev.inputType==='insertLineBreak') ev.preventDefault(); };
+    const onInput=function(){ u.it.text = xEl.textContent; save(); };
+    xEl.addEventListener('keydown', onKey); xEl.addEventListener('beforeinput', onBefore); xEl.addEventListener('input', onInput);
+    xEl.addEventListener('blur', function(){
+      xEl.removeEventListener('keydown', onKey); xEl.removeEventListener('beforeinput', onBefore); xEl.removeEventListener('input', onInput);
+      xEl.contentEditable='false'; xEl.classList.remove('editing'); row.dataset.editing='';
+      let v = xEl.textContent.replace(/\u00a0/g,' ').replace(/[\r\n]+/g,'').trim();
+      if (!v) v = orig;
+      xEl.textContent = v; u.it.text = v; row.classList.add('edited'); save();
+      if (utts[activeIdx]===u) updateNow(activeIdx);
+    }, {once:true});
+  }
+
+  // ---------- 行内发言人 ----------
+  function startSpkEdit(u){
+    const row=u.el, sEl=u.spkEl;
+    if (row.dataset.spkedit==='1') return;
+    pushUndo();
+    row.dataset.spkedit='1';
+    const orig = sEl.textContent;
+    const inp = document.createElement('input'); inp.className='spk-inline'; inp.value=orig;
+    sEl.style.display='none'; sEl.parentNode.insertBefore(inp, sEl.nextSibling);
+    inp.focus(); inp.select();
+    let done=false;
+    function commit(ok){
+      if (done) return; done=true;
+      row.dataset.spkedit='';
+      const v = inp.value.trim();
+      if (inp.parentNode) inp.parentNode.removeChild(inp);
+      sEl.style.display='';
+      if (ok && v && v!==orig){
+        if (!(v in S.names)) S.names[v] = v;
+        u.it.spk = v;
+        delete u.it.name;
+        sEl.textContent = S.names[v] || v;
+        row.classList.add('edited');
+        save();
+        buildSpkPanel();
+        if (utts[activeIdx]===u) updateNow(activeIdx);
+      }
+      else sEl.textContent = orig;
+    }
+    inp.addEventListener('keydown', function(ev){ if (ev.key==='Enter'){ ev.preventDefault(); commit(true); } else if (ev.key==='Escape'){ commit(false); } });
+    inp.addEventListener('blur', function(){ commit(true); });
+  }
+
+  // ---------- 分段 ----------
+  let splitArmed=false, suppressClick=false;
+  function setSplitArmed(v){
+    splitArmed = v;
+    splitBtn.classList.toggle('armed', v);
+    splitBtn.textContent = v ? '选文字分段…' : '分段';
+    splitHint.classList.toggle('show', v);
+    if (v){ setBrush(null); }
+  }
+  splitBtn.addEventListener('click', function(e){ e.stopPropagation(); setSplitArmed(!splitArmed); });
+  $('undoBtn').addEventListener('click', function(){ undo(); });
+  document.addEventListener('keydown', function(e){
+    if ((e.metaKey || e.ctrlKey) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'z' && !isTyping()){
+      e.preventDefault(); undo();
+    }
+  });
+
+  function selectionInfo(){
+    const sel=window.getSelection();
+    if (!sel || sel.rangeCount===0 || sel.isCollapsed) return null;
+    const range=sel.getRangeAt(0);
+    let node=range.startContainer, el=node.nodeType===3?node.parentElement:node;
+    const txt = el && el.closest ? el.closest('.txt') : null;
+    if (!txt || !txt.contains(range.endContainer)) return null;
+    return {txt:txt, range:range};
+  }
+  function offsetIn(txt, c, o){ const r=document.createRange(); r.selectNodeContents(txt); r.setEnd(c,o); return r.toString().length; }
+
+  listEl.addEventListener('mouseup', function(e){
+    if (!splitArmed) return;
+    const info = selectionInfo(); if (!info) return;
+    const txt=info.txt, total=txt.textContent.length;
+    let off = offsetIn(txt, info.range.startContainer, info.range.startOffset);
+    if (off<=0) off = offsetIn(txt, info.range.endContainer, info.range.endOffset);
+    if (off<=0 || off>=total) return;
+    const row = txt.closest('.entry'); if (!row || !row._u) return;
+    doSplit(row._u, off);
+    suppressClick = true; setSplitArmed(false);
+    try{ window.getSelection().removeAllRanges(); }catch(err){}
+  });
+
+  function doSplit(u, off){
+    const text = u.it.text;
+    if (off<=0 || off>=text.length) return;
+    const p1 = text.slice(0,off).trim(), p2 = text.slice(off).trim();
+    if (!p1 || !p2) return;
+    pushUndo();
+    const pos = S.items.indexOf(u.it);
+    let nextT = DURATION;
+    for (let i=pos+1;i<S.items.length;i++){ nextT = S.items[i].t; break; }
+    const gap = nextT - u.it.t;
+    const est = Math.max(3, text.length*0.45);
+    const span = gap>0 ? Math.min(gap, est) : est;
+    let t2 = Math.round(u.it.t + span*(off/text.length));
+    if (t2<=u.it.t) t2=u.it.t+1;
+    if (nextT>u.it.t+1 && t2>=nextT) t2=nextT-1;
+    u.it.text = p1; u.txtEl.textContent = p1; u.el.classList.add('edited');
+    const newItem = {t:t2, time:fmt(t2), spk:u.it.spk, text:p2};
+    if (u.it.name) newItem.name = u.it.name;
+    S.items.splice(pos+1, 0, newItem);
+    const newRow = makeRow(newItem);
+    utts.pop();
+    const up = utts.indexOf(u);
+    utts.splice(up+1, 0, newRow._u);
+    u.el.parentNode.insertBefore(newRow, u.el.nextSibling);
+    save(); recalcActive();
+  }
+  function recalcActive(){
+    utts.forEach(function(u){ u.el.classList.remove('active'); });
+    activeIdx=-1;
+    if (utts.length) setActive(findIndex(audio.currentTime||0), false);
+  }
+
+  // ---------- 批量删除 + 格式刷 ----------
+  let brushNum=null, dragKind=null;
+  let dragMoved=false, dragAnchorIdx=-1, dragStartRow=null, dragRows=[];
+  const selectedRows = new Set();
+  function selectRow(r){ if(!r) return; r.classList.add('selected'); selectedRows.add(r); }
+  function deselectRow(r){ if(!r) return; r.classList.remove('selected'); selectedRows.delete(r); }
+  function toggleRowSel(r){ if (selectedRows.has(r)) deselectRow(r); else selectRow(r); }
+  function clearSelection(){ selectedRows.forEach(function(r){ r.classList.remove('selected'); }); selectedRows.clear(); updateBatchBar(); }
+  function updateBatchBar(){
+    batchCount.textContent='已选 '+selectedRows.size+' 条';
+    batchConfirm.disabled = selectedRows.size===0;
+    batchConfirm.textContent = '删除 ' + selectedRows.size + ' 项';
+    const ca = $('batchCopyAll'), ct = $('batchCopyText');
+    if (ca) ca.disabled = selectedRows.size===0;
+    if (ct) ct.disabled = selectedRows.size===0;
+    batchBar.classList.toggle('show', selectedRows.size > 0);
+  }
+
+  function applyBrushTo(u){
+    if (!u || brushNum===null) return;
+    if (u.it.spk===brushNum && !u.it.name) return;
+    u.it.spk = brushNum; delete u.it.name;
+    u.spkEl.textContent = nameOf(brushNum);
+    u.el.classList.add('edited');
+  }
+  function setBrush(num){
+    brushNum = (num===null||num===undefined) ? null : String(num);
+    Array.prototype.forEach.call(spkList.querySelectorAll('.mini[data-brush]'), function(b){ b.classList.toggle('active', brushNum!==null && String(b.dataset.brush)===brushNum); });
+    if (brushNum!==null){
+      setSplitArmed(false);
+      brushState.textContent = '格式刷：' + nameOf(brushNum) + '（在左侧拖选，刷一片发言人）';
+      brushState.classList.add('show');
+    } else {
+      brushState.textContent=''; brushState.classList.remove('show');
+      if (dragKind==='brush'){ dragKind=null; stopAutoScroll(); save(); }
+    }
+  }
+  batchCancel.addEventListener('click', function(){ clearSelection(); });
+  if ($('batchCopyAll')) $('batchCopyAll').addEventListener('click', function(){
+    if (selectedRows.size===0) return;
+    copyRows(Array.from(selectedRows));
+  });
+  if ($('batchCopyText')) $('batchCopyText').addEventListener('click', function(){
+    if (selectedRows.size===0) return;
+    copyRows(Array.from(selectedRows), true);
+  });
+  batchConfirm.addEventListener('click', function(){
+    if (selectedRows.size===0) return;
+    pushUndo();
+    Array.from(selectedRows).forEach(function(row){
+      const u = row._u; if (!u) return;
+      const p = S.items.indexOf(u.it); if (p>=0) S.items.splice(p,1);
+      const q = utts.indexOf(u); if (q>=0) utts.splice(q,1);
+      if (row.parentNode) row.parentNode.removeChild(row);
+    });
+    clearSelection(); save(); recalcActive();
+    if (utts.length===0) nowEl.textContent = '（已全部删除）';
+  });
+
+  let lastPX=0, lastPY=0, scrollRAF=null;
+  function rowAtPoint(x,y){ const el=document.elementFromPoint(x,y); return el && el.closest ? el.closest('.entry') : null; }
+  function updateBatchAt(x,y){
+    const row=rowAtPoint(x,y); if(!row) return;
+    const idx=dragRows.indexOf(row); if(idx<0) return;
+    if (idx!==dragAnchorIdx) dragMoved=true;
+    const a=Math.min(dragAnchorIdx,idx), b=Math.max(dragAnchorIdx,idx);
+    clearSelection();
+    for(let i=a;i<=b;i++) selectRow(dragRows[i]);
+    updateBatchBar();
+  }
+  function updateBrushAt(x,y){
+    const row=rowAtPoint(x,y); if(!row) return;
+    const idx=dragRows.indexOf(row); if(idx<0) return;
+    if (idx!==dragAnchorIdx) dragMoved=true;
+    const a=Math.min(dragAnchorIdx,idx), b=Math.max(dragAnchorIdx,idx);
+    for(let i=a;i<=b;i++){ const r=dragRows[i]; if (r && r._u) applyBrushTo(r._u); }
+  }
+  function stopAutoScroll(){ if (scrollRAF!==null){ cancelAnimationFrame(scrollRAF); scrollRAF=null; } }
+  function autoScrollStep(){
+    if (!dragKind){ stopAutoScroll(); return; }
+    const rect=listEl.getBoundingClientRect(), EDGE=90;
+    let speed=0;
+    if (lastPY < rect.top+EDGE){ const d=Math.min(EDGE, rect.top+EDGE-lastPY); speed=-Math.max(2,Math.min(60,Math.round(d*0.65))); }
+    else if (lastPY > rect.bottom-EDGE){ const d=Math.min(EDGE, lastPY-(rect.bottom-EDGE)); speed=Math.max(2,Math.min(60,Math.round(d*0.65))); }
+    if (speed!==0){ listEl.scrollTop += speed; if (dragKind==='batch') updateBatchAt(lastPX,lastPY); else updateBrushAt(lastPX,lastPY); }
+    scrollRAF = requestAnimationFrame(autoScrollStep);
+  }
+  let pendingDrag = null;
+  function beginDrag(kind, row, x, y){
+    dragRows = Array.prototype.slice.call(listEl.querySelectorAll('.entry'));
+    dragAnchorIdx = dragRows.indexOf(row); dragStartRow = row; dragMoved=false;
+    dragKind = kind; lastPX=x; lastPY=y;
+    stopAutoScroll(); scrollRAF=requestAnimationFrame(autoScrollStep);
+  }
+  listEl.addEventListener('mousedown', function(e){
+    if (e.button !== 0) return;
+    const row = e.target.closest ? e.target.closest('.entry') : null;
+    if (!row || !row._u) return;
+    if (brushNum !== null){
+      beginDrag('brush', row, e.clientX, e.clientY);
+      applyBrushTo(row._u);
+      return;
+    }
+    if (splitArmed || row.dataset.editing === '1') return;
+    pendingDrag = { row: row, x: e.clientX, y: e.clientY };
+  });
+  listEl.addEventListener('mousemove', function(e){
+    if (pendingDrag && !dragKind){
+      if (Math.abs(e.clientY - pendingDrag.y) > 6 || Math.abs(e.clientX - pendingDrag.x) > 25){
+        e.preventDefault();
+        suppressClick = true;
+        try { window.getSelection().removeAllRanges(); } catch(_){}
+        beginDrag('batch', pendingDrag.row, pendingDrag.x, pendingDrag.y);
+        pendingDrag = null;
+        updateBatchAt(e.clientX, e.clientY);
+      }
+    }
+    if (!dragKind) return;
+    lastPX=e.clientX; lastPY=e.clientY;
+    if (dragKind==='batch') updateBatchAt(e.clientX,e.clientY); else updateBrushAt(e.clientX,e.clientY);
+  });
+  document.addEventListener('mouseup', function(){
+    pendingDrag = null;
+    if (!dragKind) return;
+    const kind=dragKind; dragKind=null; stopAutoScroll();
+    if (kind==='batch'){ if (!dragMoved && dragStartRow) toggleRowSel(dragStartRow); updateBatchBar(); }
+    else save();
+  });
+
+  // ---------- 说话人对照 ----------
+  function buildSpkPanel(){
+    spkList.innerHTML='';
+    Object.keys(S.names).sort(function(a,b){ return (parseInt(a,10)||0)-(parseInt(b,10)||0); }).forEach(function(spk){
+      const r=document.createElement('div'); r.className='spk-row';
+      const lab=document.createElement('span'); lab.className='spk-lab';
+      lab.textContent = /^\d+$/.test(spk) ? ('说话人'+spk) : spk;
+      const inp=document.createElement('input'); inp.className='spk-input'; inp.value=S.names[spk]||''; inp.placeholder='别名';
+      inp.addEventListener('keydown', function(ev){ if (ev.key==='Enter'){ ev.preventDefault(); applyAlias(spk, inp.value); } });
+      const rep=document.createElement('button'); rep.type='button'; rep.className='mini'; rep.textContent='替换'; rep.title='把左侧该发言人的这一栏替换为别名';
+      rep.addEventListener('click', function(e){ e.stopPropagation(); applyAlias(spk, inp.value); });
+      const br=document.createElement('button'); br.type='button'; br.className='mini'; br.textContent='刷'; br.dataset.brush=spk; br.title='点一下，再在左侧拖选刷发言人';
+      br.addEventListener('click', function(e){ e.stopPropagation(); setBrush(brushNum===spk?null:spk); });
+      r.append(lab, inp, rep, br);
+      spkList.appendChild(r);
+    });
+  }
+  function applyAlias(spk, v){
+    v = (v||'').trim();
+    if (!v) return;
+    pushUndo();
+    S.names[spk] = v;
+    utts.forEach(function(u){
+      if (String(u.it.spk)===String(spk)){
+        if (u.it.name) delete u.it.name;
+        u.spkEl.textContent = v;
+      }
+    });
+    save();
+    buildSpkPanel();
+    if (utts[activeIdx] && String(utts[activeIdx].it.spk)===String(spk)) updateNow(activeIdx);
+  }
+  // 刷新说话人：按“当前显示的姓名/别名”重新归并，清掉改名过程中产生的重复、空条目
+  function refreshSpeakers(){
+    const map = {};
+    S.items.forEach(function(it){
+      let name = it.name || S.names[it.spk] || it.spk;
+      name = String(name == null ? '' : name).trim() || String(it.spk);
+      it.spk = name;
+      delete it.name;
+      map[name] = true;
+    });
+    const next = {};
+    Object.keys(map).forEach(function(n){ next[n] = n; });
+    S.names = next;
+    save();
+    renderAll();
+    if (utts[activeIdx]) updateNow(activeIdx);
+  }
+  $('refreshSpkBtn').addEventListener('click', function(){ refreshSpeakers(); });
+  $('clearBtn').addEventListener('click', function(){
+    const urls = (S.urls && S.urls.length) ? S.urls : (S.url ? [S.url] : []);
+    if (!urls.length){
+      alert('当前不是从分享链接导入的，无法恢复讯飞原版，请回首页粘贴链接。');
+      return;
+    }
+    if (!confirm('恢复到讯飞原有版本会覆盖当前所有修改（文字、说话人、删除、分段），且无法撤销。\n\n确定恢复到讯飞原有版本吗？')) return;
+    doImportMany(urls);
+  });
+
+  // ---------- 右键菜单 ----------
+  let ctxTarget=null;
+  function hideCtx(){ ctxMenu.classList.remove('open'); ctxTarget=null; }
+  function doDelete(u){
+    pushUndo();
+    const p=S.items.indexOf(u.it); if(p>=0) S.items.splice(p,1);
+    const q=utts.indexOf(u); if(q>=0) utts.splice(q,1);
+    if (u.el.parentNode) u.el.parentNode.removeChild(u.el);
+    save(); recalcActive();
+  }
+  function copyText(text){
+    if (!text) return;
+    function done(){ nowEl.textContent = '已复制 ' + text.split('\n').length + ' 条'; }
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(done).catch(function(){ fallbackCopy(text); });
+    } else fallbackCopy(text);
+    function fallbackCopy(t){
+      const ta = document.createElement('textarea');
+      ta.value = t; ta.style.position='fixed'; ta.style.opacity='0';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); done(); } catch(e){ alert('复制失败'); }
+      document.body.removeChild(ta);
+    }
+  }
+  function copyRows(rows, onlyText){
+    const list = rows.filter(Boolean).map(function(r){ return r._u; }).filter(Boolean);
+    if (!list.length) return;
+    list.sort(function(a,b){ return S.items.indexOf(a.it) - S.items.indexOf(b.it); });
+    const text = list.map(function(u){
+      if (onlyText) return u.it.text;
+      return '[' + (u.it.time || '') + '] ' + displayName(u.it) + '：' + u.it.text;
+    }).join('\n');
+    copyText(text);
+  }
+  listEl.addEventListener('contextmenu', function(e){
+    if (brushNum!==null) return;
+    const row = e.target.closest ? e.target.closest('.entry') : null;
+    if (!row) return;
+    e.preventDefault(); ctxTarget=row._u;
+    if ($('ctxCopySel')) $('ctxCopySel').style.display = selectedRows.size > 0 ? '' : 'none';
+    ctxMenu.classList.add('open');
+    const mw=ctxMenu.offsetWidth, mh=ctxMenu.offsetHeight;
+    let x=e.clientX, y=e.clientY;
+    if (x+mw>window.innerWidth-8) x=window.innerWidth-mw-8;
+    if (y+mh>window.innerHeight-8) y=window.innerHeight-mh-8;
+    ctxMenu.style.left=Math.max(8,x)+'px'; ctxMenu.style.top=Math.max(8,y)+'px';
+  });
+  ctxMenu.addEventListener('click', function(e){
+    const btn=e.target.closest('button'); if (!btn) return;
+    const act=btn.dataset.act, u=ctxTarget; hideCtx(); if (!u) return;
+    if (act==='copySel') copyRows(Array.from(selectedRows).length ? Array.from(selectedRows) : (u ? [u.el] : []));
+    else if (act==='copyOne'){ if (u) copyRows([u.el]); }
+    else if (act==='edit') startEdit(u);
+    else if (act==='editSpk') startSpkEdit(u);
+    else if (act==='delete') doDelete(u);
+  });
+  document.addEventListener('click', function(e){ if (!ctxMenu.contains(e.target)) hideCtx(); });
+  document.addEventListener('keydown', function(e){ if (e.key==='Escape'){ hideCtx(); setBrush(null); } });
+
+  // ---------- 导出 ----------
+  $('exportBtn').addEventListener('click', function(){
+    const out=[];
+    S.items.forEach(function(it){ out.push('['+it.time+'] '+displayName(it)+'：'+it.text); });
+    const blob=new Blob([out.join('\n')], {type:'text/plain;charset=utf-8'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=(S.title||'转写修订稿')+'.txt';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  });
+
+  // ---------- 播放器 ----------
+  function seekRelative(dt){
+    const dur = (isFinite(audio.duration)&&audio.duration>0)?audio.duration:DURATION;
+    let t=(audio.readyState>=1?audio.currentTime:0)+dt; t=Math.max(0,Math.min(dur,t));
+    safeSeek(t); setActive(findIndex(t), true); updateBar(t,dur);
+  }
+  back5.addEventListener('click', function(){ seekRelative(-5); });
+  fwd5.addEventListener('click', function(){ seekRelative(5); });
+  playBtn.addEventListener('click', function(){ if (audio.paused) audio.play().catch(function(){}); else audio.pause(); });
+  audio.addEventListener('play', function(){ playBtn.textContent='❚❚'; });
+  audio.addEventListener('pause', function(){ playBtn.textContent='▶'; });
+  audio.addEventListener('timeupdate', function(){
+    const t=audio.currentTime, dur=(isFinite(audio.duration)&&audio.duration>0)?audio.duration:DURATION;
+    updateBar(t,dur);
+    const i=findIndex(t); if (i!==activeIdx) setActive(i,true);
+  });
+  audio.addEventListener('loadedmetadata', function(){
+    const d=audio.duration; if (isFinite(d)&&d>0) DURATION=d;
+    durEl.textContent=fmt(DURATION); updateBar(audio.currentTime||0,DURATION);
+    if (pendingSeek!==null){ try{ audio.currentTime=pendingSeek; }catch(e){} pendingSeek=null; }
+  });
+  audio.addEventListener('error', function(){ nowEl.textContent='音频未能加载（可能是分享链接过期）。'; });
+  rateEl.addEventListener('change', function(){ audio.playbackRate=parseFloat(rateEl.value); });
+
+  let dragging=false;
+  function seekByEvent(e){
+    const r=progressEl.getBoundingClientRect();
+    let ratio=(e.clientX-r.left)/r.width; ratio=Math.max(0,Math.min(1,ratio));
+    const dur=(isFinite(audio.duration)&&audio.duration>0)?audio.duration:DURATION;
+    const t=ratio*dur; safeSeek(t); setActive(findIndex(t),true); updateBar(t,dur);
+  }
+  progressEl.addEventListener('pointerdown', function(e){ dragging=true; try{progressEl.setPointerCapture(e.pointerId);}catch(_){} seekByEvent(e); });
+  progressEl.addEventListener('pointermove', function(e){ if (dragging) seekByEvent(e); });
+  progressEl.addEventListener('pointerup', function(){ dragging=false; });
+  progressEl.addEventListener('pointercancel', function(){ dragging=false; });
+  document.addEventListener('keydown', function(e){
+    if (e.code==='Space' && e.target===document.body){ e.preventDefault(); playBtn.click(); }
+    else if (e.code==='ArrowRight'){ try{ audio.currentTime=Math.min(DURATION,audio.currentTime+5); }catch(_){} }
+    else if (e.code==='ArrowLeft'){ try{ audio.currentTime=Math.max(0,audio.currentTime-5); }catch(_){} }
+  });
+
+  // ---------- 导入 ----------
+  function setMsg(t, err){ const el=$('parseMsg'); el.textContent=t||''; el.classList.toggle('err', !!err); }
+  const MAX_LINKS = 3;
+  function updateAddBtn(){
+    const n = document.querySelectorAll('.share-url-extra').length;
+    const btn = $('addLinkBtn');
+    if (btn) btn.disabled = n >= MAX_LINKS - 1;
+  }
+  function addExtraLink(){
+    if (document.querySelectorAll('.share-url-extra').length >= MAX_LINKS - 1){
+      alert('最多只允许 ' + MAX_LINKS + ' 个链接');
+      return;
+    }
+    const box = document.createElement('div'); box.className = 'extra-row';
+    const inp = document.createElement('input'); inp.className = 'share-url-extra';
+    const idx = document.querySelectorAll('.share-url-extra').length + 2;
+    inp.placeholder = '第' + (idx === 2 ? '二' : idx === 3 ? '三' : idx) + '个讯飞分享链接…';
+    inp.autocomplete = 'off';
+    const del = document.createElement('button'); del.type = 'button'; del.className = 'del'; del.textContent = '×'; del.title = '删除这个链接';
+    del.addEventListener('click', function(){ box.remove(); updateAddBtn(); });
+    box.append(inp, del);
+    $('extraLinks').appendChild(box);
+    updateAddBtn();
+    inp.focus();
+  }
+  function collectUrls(){
+    const list = [];
+    const first = $('shareUrl').value.trim();
+    if (first) list.push(first);
+    document.querySelectorAll('.share-url-extra').forEach(function(x){ const v = x.value.trim(); if (v) list.push(v); });
+    return list;
+  }
+  async function doImportMany(urls){
+    if (!urls.length){ setMsg('请先粘贴讯飞分享链接', true); return; }
+    if (urls.length === 1 && inHistory(urls[0])){
+      const hit = loadDocByUrl(urls[0]);
+      if (hit && hit.state && hit.state.items && hit.state.items.length){
+        alert('已为您加载历史数据');
+        S = hit.state;
+        if (!S.names) S.names = {};
+        save(); showEditor(); renderAll();
+        if (S.parts && S.parts.length > 1) loadAudio(S);
+        else if (S.audioUrl) loadAudio(S);
+        return;
+      }
+    }
+    setMsg('正在解析讯飞分享…');
+    $('parseBtn').disabled = true;
+    try {
+      let merged = [], parts = [], offset = 0, title = '', firstAudio = '';
+      for (let i=0;i<urls.length;i++){
+        setMsg('正在解析第 ' + (i+1) + ' / ' + urls.length + ' 个链接…');
+        const res = await fetch('/api/parse', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({url:urls[i]})});
+        const d = await res.json();
+        if (!d.ok) throw new Error('第 ' + (i+1) + ' 个链接：' + (d.error || '解析失败'));
+        const m = urls[i].match(/[?&]audioId=([A-Za-z0-9]+)/);
+        const audioId = m ? m[1] : '';
+        if (i === 0){ title = d.title || '未命名'; firstAudio = d.audioUrl || ''; }
+        const items = (d.items || []).map(function(x){ return { t: x.t + offset, time: fmt(x.t + offset), spk: x.spk, text: x.text }; });
+        merged = merged.concat(items);
+        parts.push({ url: urls[i], audioUrl: d.audioUrl || '', audioId: audioId, duration: d.duration || 0, offset: offset });
+        offset += d.duration || 0;
+      }
+      S = { title: title, url: urls[0], urls: urls.slice(), audioUrl: firstAudio, audioId: (parts[0] && parts[0].audioId) || '', duration: offset, items: merged, names: {}, parts: parts };
+      S.items.forEach(function(it){ if (!(it.spk in S.names)) S.names[it.spk] = '说话人' + it.spk; });
+      addHistory(urls[0], title, (parts[0] && parts[0].audioId) || '');
+      save(); showEditor(); renderAll();
+      if (S.parts && S.parts.length > 1) loadAudio(S);
+      else if (S.audioUrl) loadAudio(S);
+      setMsg('');
+    } catch(err){
+      setMsg(err && err.message ? err.message : '解析失败', true);
+    } finally {
+      $('parseBtn').disabled = false;
+    }
+  }
+  function doImport(url){ return doImportMany([url]); }
+  function showEditor(){
+    landing.classList.add('hidden');
+    editor.classList.remove('hidden');
+    docTitle.textContent = S.title || '转写校对';
+    docSub.textContent = '共 ' + S.items.length + ' 条 · 时长 ' + fmt(S.duration||0);
+  }
+  $('addLinkBtn').addEventListener('click', addExtraLink);
+  updateAddBtn();
+  $('parseBtn').addEventListener('click', function(){ doImportMany(collectUrls()); });
+  $('shareUrl').addEventListener('keydown', function(e){ if (e.key==='Enter') doImport($('shareUrl').value.trim()); });
+  $('reimportBtn').addEventListener('click', function(){
+    save();
+    editor.classList.add('hidden');
+    landing.classList.remove('hidden');
+    $('continueRow').classList.remove('hidden');
+  });
+
+  // 继续上次
+  let savedState = null;
+  try { savedState = JSON.parse(localStorage.getItem(LS)||'null'); } catch(e){}
+  if (savedState && savedState.items && savedState.items.length){
+    $('continueRow').classList.remove('hidden');
+  }
+  $('continueBtn').addEventListener('click', function(){
+    if (!S.items.length && savedState) S = savedState;
+    showEditor(); renderAll();
+    if (S.audioUrl) loadAudio(S);
+  });
+
+  // ---------- 给 DSH 的操作 API ----------
+
+  // ---------- 历史链接 + 音频缓存 + 项目保存 ----------
+  const HKEY = 'dsh_workbench_history_v1';
+  function loadHistory(){ try { return JSON.parse(localStorage.getItem(HKEY)||'[]')||[]; } catch(e){ return []; } }
+  function saveHistory(h){ try { localStorage.setItem(HKEY, JSON.stringify(h.slice(0,10))); } catch(e){} }
+  function addHistory(url, title, audioId){
+    const h = loadHistory().filter(function(x){ return String(x.audioId) !== String(audioId); });
+    h.unshift({ url:url, title:title||'', audioId:audioId||'', t:Date.now() });
+    saveHistory(h); renderHistory();
+  }
+  function fmtDate(ms){ try { return new Date(ms).toLocaleString('zh-CN',{hour12:false}); } catch(e){ return ''; } }
+  function renderHistory(){
+    const list = $('histList'); if (!list) return;
+    const h = loadHistory();
+    list.innerHTML = '';
+    if (!h.length){ list.innerHTML = '<div class="hist-item"><small>暂无历史链接</small></div>'; return; }
+    h.forEach(function(x){
+      const el = document.createElement('div'); el.className = 'hist-item';
+      const t = document.createElement('div'); t.textContent = x.title || x.audioId || '未命名';
+      const s2 = document.createElement('small'); s2.textContent = fmtDate(x.t) + ' · ' + (x.audioId||'');
+      el.append(t, s2);
+      el.addEventListener('click', function(){
+        $('histPanel').classList.add('hidden');
+        $('shareUrl').value = x.url;
+        doImport(x.url);
+      });
+      list.appendChild(el);
+    });
+  }
+  if ($('histBtn')){
+    $('histBtn').addEventListener('click', function(e){ e.stopPropagation(); $('histPanel').classList.toggle('hidden'); renderHistory(); });
+    if ($('openProjLandingBtn')) $('openProjLandingBtn').addEventListener('click', function(){ $('projFile').click(); });
+    document.addEventListener('click', function(e){
+      const p = $('histPanel');
+      if (p && !p.classList.contains('hidden') && !p.contains(e.target) && e.target !== $('histBtn')) p.classList.add('hidden');
+    });
+    renderHistory();
+  }
+
+  // IndexedDB：音频缓存
+  function idbOpen(){
+    return new Promise(function(res, rej){
+      const req = indexedDB.open('dsh_workbench_db', 2);
+      req.onupgradeneeded = function(e){
+        const db = e.target.result;
+        if (!db.objectStoreNames.contains('audio')) db.createObjectStore('audio');
+        if (!db.objectStoreNames.contains('model')) db.createObjectStore('model');
+      };
+      req.onsuccess = function(){ res(req.result); };
+      req.onerror = function(){ rej(req.error); };
+    });
+  }
+  async function idbGet(store, key){
+    if (!key) return null;
+    try {
+      const db = await idbOpen();
+      return await new Promise(function(res, rej){
+        const tx = db.transaction(store,'readonly');
+        const r = tx.objectStore(store).get(key);
+        r.onsuccess = function(){ res(r.result); };
+        r.onerror = function(){ rej(r.error); };
+      });
+    } catch(e){ return null; }
+  }
+  async function idbPut(store, key, val){
+    if (!key) return;
+    try {
+      const db = await idbOpen();
+      await new Promise(function(res, rej){
+        const tx = db.transaction(store,'readwrite');
+        tx.objectStore(store).put(val, key);
+        tx.oncomplete = function(){ res(); };
+        tx.onerror = function(){ rej(tx.error); };
+      });
+    } catch(e){}
+  }
+  async function fetchBlob(url, onProgress){
+    const res = await fetch(url);
+    if (!res.ok) throw new Error('音频下载失败 ' + res.status);
+    const total = parseInt(res.headers.get('Content-Length')||'0',10);
+    const reader = res.body.getReader();
+    const chunks = []; let received = 0;
+    while (true){
+      const r = await reader.read();
+      if (r.done) break;
+      chunks.push(r.value); received += r.value.length;
+      if (onProgress) onProgress(received, total);
+    }
+    return new Blob(chunks, {type:'audio/mpeg'});
+  }
+  async function loadAudio(s){
+    if (s.parts && s.parts.length > 1){
+      const key = 'concat:' + s.parts.map(function(p){ return p.audioId; }).join(',');
+      let cblob = await idbGet('audio', key);
+      if (!cblob){
+        nowEl.textContent = '下载音频 0 / ' + s.parts.length;
+        const chunks = [];
+        for (let i=0;i<s.parts.length;i++){
+          const r = await fetch('/api/audio?url=' + encodeURIComponent(s.parts[i].audioUrl));
+          chunks.push(await r.blob());
+          nowEl.textContent = '下载音频 ' + (i+1) + ' / ' + s.parts.length;
+        }
+        cblob = new Blob(chunks, {type:'audio/mpeg'});
+        await idbPut('audio', key, cblob);
+      }
+      audio.src = URL.createObjectURL(cblob);
+      nowEl.textContent = '多段音频已合并。';
+      audio.load();
+      return;
+    }
+    if (!s.audioUrl) return;
+    const key = s.audioId || s.audioUrl;
+    let blob = await idbGet('audio', key);
+    if (!blob){
+      try {
+        blob = await fetchBlob('/api/audio?url=' + encodeURIComponent(s.audioUrl), function(rec, total){
+          const pct = total ? Math.round(rec/total*100) : 0;
+          nowEl.textContent = '音频下载中 ' + pct + '%（下载后本地播放更快）';
+        });
+        await idbPut('audio', key, blob);
+      } catch(e){ blob = null; }
+    }
+    if (blob){
+      audio.src = URL.createObjectURL(blob);
+      nowEl.textContent = '音频已缓存到本地，可直接拖动。';
+    } else {
+      audio.src = '/api/audio?url=' + encodeURIComponent(s.audioUrl);
+    }
+    audio.load();
+  }
+
+  // ---------- 项目文件：单文件 .trp（zip 容器：state.json + audio.mp3） ----------
+  function crc32(buf){
+    if (!crc32.t){
+      const t = new Uint32Array(256);
+      for (let n=0;n<256;n++){ let c=n; for (let k=0;k<8;k++) c = (c&1) ? (0xEDB88320 ^ (c>>>1)) : (c>>>1); t[n]=c>>>0; }
+      crc32.t = t;
+    }
+    let crc = 0xFFFFFFFF;
+    for (let i=0;i<buf.length;i++) crc = (crc>>>8) ^ crc32.t[(crc ^ buf[i]) & 0xFF];
+    return (crc ^ 0xFFFFFFFF) >>> 0;
+  }
+  function zipCreate(files){
+    const enc = new TextEncoder();
+    const chunks = [], central = [];
+    let offset = 0;
+    const d = new Date();
+    const time = ((d.getHours()&31)<<11) | ((d.getMinutes()&63)<<5) | (((d.getSeconds()/2)|0)&31);
+    const date = (((d.getFullYear()-1980)&127)<<9) | (((d.getMonth()+1)&15)<<5) | (d.getDate()&31);
+    files.forEach(function(f){
+      const name = enc.encode(f.name);
+      const data = f.data;
+      const crc = crc32(data);
+      const local = new Uint8Array(30 + name.length);
+      const lv = new DataView(local.buffer);
+      lv.setUint32(0, 0x04034b50, true); lv.setUint16(4, 20, true); lv.setUint16(6, 0, true); lv.setUint16(8, 0, true);
+      lv.setUint16(10, time, true); lv.setUint16(12, date, true);
+      lv.setUint32(14, crc, true); lv.setUint32(18, data.length, true); lv.setUint32(22, data.length, true);
+      lv.setUint16(26, name.length, true); lv.setUint16(28, 0, true);
+      local.set(name, 30);
+      chunks.push(local, data);
+      const cen = new Uint8Array(46 + name.length);
+      const cv = new DataView(cen.buffer);
+      cv.setUint32(0, 0x02014b50, true); cv.setUint16(4, 20, true); cv.setUint16(6, 20, true);
+      cv.setUint16(8, 0, true); cv.setUint16(10, 0, true);
+      cv.setUint16(12, time, true); cv.setUint16(14, date, true);
+      cv.setUint32(16, crc, true); cv.setUint32(20, data.length, true); cv.setUint32(24, data.length, true);
+      cv.setUint16(28, name.length, true); cv.setUint16(30, 0, true); cv.setUint16(32, 0, true);
+      cv.setUint16(34, 0, true); cv.setUint16(36, 0, true); cv.setUint32(38, 0, true);
+      cv.setUint32(42, offset, true);
+      cen.set(name, 46);
+      central.push(cen);
+      offset += local.length + data.length;
+    });
+    const cdStart = offset;
+    let cdSize = 0; central.forEach(function(c){ cdSize += c.length; });
+    const eocd = new Uint8Array(22);
+    const ev = new DataView(eocd.buffer);
+    ev.setUint32(0, 0x06054b50, true); ev.setUint16(4, 0, true); ev.setUint16(6, 0, true);
+    ev.setUint16(8, files.length, true); ev.setUint16(10, files.length, true);
+    ev.setUint32(12, cdSize, true); ev.setUint32(16, cdStart, true); ev.setUint16(20, 0, true);
+    return new Blob(chunks.concat(central, [eocd]), {type:'application/octet-stream'});
+  }
+  async function zipRead(blob){
+    const buf = new Uint8Array(await blob.arrayBuffer());
+    const dv = new DataView(buf.buffer, buf.byteOffset, buf.byteLength);
+    let eocd = -1;
+    const min = Math.max(0, buf.length - 22 - 65535);
+    for (let i=buf.length-22; i>=min; i--){
+      if (buf[i]===0x50 && buf[i+1]===0x4b && buf[i+2]===0x05 && buf[i+3]===0x06){ eocd=i; break; }
+    }
+    if (eocd < 0) throw new Error('不是有效的 .trp 项目文件');
+    const count = dv.getUint16(eocd+10, true);
+    let p = dv.getUint32(eocd+16, true);
+    const out = {};
+    for (let i=0;i<count;i++){
+      if (dv.getUint32(p, true) !== 0x02014b50) break;
+      const compSize = dv.getUint32(p+20, true);
+      const nameLen = dv.getUint16(p+28, true);
+      const extraLen = dv.getUint16(p+30, true);
+      const commentLen = dv.getUint16(p+32, true);
+      const localOff = dv.getUint32(p+42, true);
+      const name = new TextDecoder().decode(buf.subarray(p+46, p+46+nameLen));
+      const lNameLen = dv.getUint16(localOff+26, true);
+      const lExtraLen = dv.getUint16(localOff+28, true);
+      const dataStart = localOff + 30 + lNameLen + lExtraLen;
+      out[name] = buf.subarray(dataStart, dataStart + compSize);
+      p += 46 + nameLen + extraLen + commentLen;
+    }
+    return out;
+  }
+
+  if ($('saveProjBtn')){
+    $('saveProjBtn').addEventListener('click', async function(){
+      const enc = new TextEncoder();
+      const files = [{name:'state.json', data: enc.encode(JSON.stringify(S))}];
+      const key = S.audioId || S.audioUrl;
+      let aud = await idbGet('audio', key);
+      if (!aud && S.audioUrl){
+        try { aud = await fetchBlob('/api/audio?url=' + encodeURIComponent(S.audioUrl)); } catch(e){}
+      }
+      if (aud) files.push({name:'audio.mp3', data: new Uint8Array(await aud.arrayBuffer())});
+      const blob = zipCreate(files);
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = (S.title || '工作台') + '.trp';
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      dirty = false;
+    });
+  }
+  if ($('openProjBtn')){
+    $('openProjBtn').addEventListener('click', function(){ $('projFile').click(); });
+    $('projFile').addEventListener('change', async function(){
+      const f = $('projFile').files[0]; if (!f) return;
+      try {
+        const z = await zipRead(f);
+        const stateData = z['state.json'];
+        if (!stateData) throw new Error('项目文件里没有 state.json');
+        const d = JSON.parse(new TextDecoder().decode(stateData));
+        if (!d || !Array.isArray(d.items)) throw new Error('不是有效的工作台文件');
+        S = d;
+        if (!S.names) S.names = {};
+        S.items.forEach(function(it){ if (!(it.spk in S.names)) S.names[it.spk] = it.spk; });
+        save(); showEditor(); renderAll();
+        const aud = z['audio.mp3'];
+        if (aud && aud.length){
+          const blob = new Blob([aud], {type:'audio/mpeg'});
+          await idbPut('audio', S.audioId || S.audioUrl, blob);
+          audio.src = URL.createObjectURL(blob); audio.load();
+          nowEl.textContent = '已从项目文件恢复，音频来自本地。';
+        } else if (S.audioUrl){
+          loadAudio(S);
+        }
+      } catch(e){ alert('打开失败：' + (e.message || e)); }
+      $('projFile').value = '';
+    });
+  }
+
+  window.addEventListener('beforeunload', function(e){
+    if (dirty){ e.preventDefault(); e.returnValue = ''; }
+  });
+
+
+
+
+  // ---------- 自动分说话人（本地 sherpa-onnx，点按钮直接跑） ----------
+  async function autoDiarize(){
+    if (!S.audioUrl && !S.duration){ alert('还没有音频'); return; }
+    const kStr = window.prompt('预计有几位说话人？（2-10，默认 6）', '6');
+    if (kStr === null) return;
+    const k = Math.max(2, Math.min(10, parseInt(kStr, 10) || 6));
+    const mStr = window.prompt('只分析前多少分钟？（0 = 全部，默认 0；全部约需几分钟）', '0');
+    if (mStr === null) return;
+    const minutes = Math.max(0, parseInt(mStr, 10) || 0);
+    if (!confirm('自动分说话人会覆盖当前发言人标注，确定？')) return;
+    try {
+      $('diarBtn').disabled = true;
+      nowEl.textContent = '本地分离中…（可能要几分钟，请稍候）';
+      const body = { url: S.audioUrl || '', duration: S.duration || 0, numSpeakers: k };
+      if (minutes > 0) body.maxSeconds = minutes * 60;
+      const res = await fetch('/api/diarize', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body)
+      });
+      const d = await res.json();
+      if (!d.ok) throw new Error(d.error || '分离失败');
+      const segs = d.segments || [];
+      const names = {};
+      S.items.forEach(function(it, idx){
+        const st = it.t;
+        const en = (S.items[idx + 1] ? S.items[idx + 1].t : st + 30);
+        let best = null, bestOv = 0;
+        segs.forEach(function(sg){
+          const ov = Math.min(en, sg.end) - Math.max(st, sg.start);
+          if (ov > bestOv){ bestOv = ov; best = sg; }
+        });
+        if (best && bestOv > 0){
+          const key = 'D' + (best.spk + 1);
+          it.spk = key;
+          delete it.name;
+          names[key] = '说话人' + (best.spk + 1);
+        }
+      });
+      Object.keys(names).forEach(function(nm){ S.names[nm] = names[nm]; });
+      save(); renderAll();
+      nowEl.textContent = '自动分说话人完成：' + k + ' 位，共 ' + segs.length + ' 段。';
+    } catch(e){
+      alert('自动分说话人失败：' + (e.message || e));
+      nowEl.textContent = '';
+    } finally {
+      $('diarBtn').disabled = false;
+    }
+  }
+  if ($('diarBtn')) $('diarBtn').addEventListener('click', autoDiarize);
+
+  window.DSH = {
+    getState: function(){ return JSON.parse(JSON.stringify(S)); },
+    importShare: function(url){ return doImport(url); },
+    renameSpeaker: function(spk, name){ S.names[spk]=name; save(); buildSpkPanel(); utts.forEach(function(u){ if (u.it.spk===spk && !u.it.name) u.spkEl.textContent=name; }); },
+    replaceSpeaker: function(from, to){ S.items.forEach(function(it){ if (String(it.spk)===String(from)){ it.spk=String(to); delete it.name; } }); delete S.names[from]; save(); renderAll(); },
+    setText: function(idx, text){ if (S.items[idx]){ S.items[idx].text=text; save(); renderAll(); } },
+    deleteItems: function(idxs){ idxs.slice().sort(function(a,b){return b-a;}).forEach(function(i){ if (S.items[i]) S.items.splice(i,1); }); save(); renderAll(); },
+    exportText: function(){ return S.items.map(function(it){ return '['+it.time+'] '+displayName(it)+'：'+it.text; }).join('\n'); },
+    seek: function(t){ jumpTo(t, true); }
+  };
+})();
+</script>
+</body>
+</html>
