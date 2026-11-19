@@ -256,3 +256,9 @@ A：目前只针对讯飞听见的分享链接做了适配；欢迎在 issue 中
 - [pyannote](https://github.com/pyannote/pyannote-audio) / [3D-Speaker](https://github.com/modelscope/3D-Speaker)：分割与说话人向量模型。
 
 > 本项目与科大讯飞无隶属关系，“讯飞”“iFlytek”等商标归其各自权利人所有。
+
+---
+
+## 开发说明
+
+本项目使用 **DSH（DeepSeek Harness）** 开发。

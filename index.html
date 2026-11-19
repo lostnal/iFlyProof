@@ -100,6 +100,7 @@
   .side-title{font-size:13px;font-weight:700;color:#7a4a3f;}
   .side-hint{font-size:11px;color:var(--muted);line-height:1.5;}
   .spk-list{flex:1 1 auto;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:6px;}
+  .spk-new{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line);}
   .spk-row{display:flex;align-items:center;gap:5px;}
   .spk-lab{flex:0 0 52px;font-size:11.5px;color:var(--muted);}
   .spk-input{flex:1 1 auto;font-family:inherit;font-size:12px;padding:4px 6px;border:1px solid var(--line);border-radius:5px;background:#fff;min-width:0;}
@@ -158,8 +159,8 @@
     <h2 class="landing-title">粘贴讯飞听见分享链接，进入可编辑转写稿</h2>
     <div class="paste-box">
       <input id="shareUrl" placeholder="https://shareaudio.iflyrec.com/appShare/share.html?audioId=..." autocomplete="off">
-      <button id="parseBtn">解析并打开</button>
       <button id="addLinkBtn" type="button" class="plus" title="添加链接（最多 3 个）">＋</button>
+      <button id="parseBtn">解析</button>
     </div>
     <div id="extraLinks"></div>
     <div id="parseMsg" class="msg"></div>
@@ -221,13 +222,14 @@
   </div>
   <aside>
     <div class="side-title">说话人对照</div>
-    <div class="side-hint">改名字后全文实时同步；「替换」可合并/改名，「刷」后拖选可刷一片发言人。</div>
+    <div class="side-hint">点左侧发言人标签可改名/新建；选中多行后点「设为」批量归属；「改名」批量改别名。</div>
     <div id="spkList" class="spk-list"></div>
     <div id="brushState" class="brush-state"></div>
     <div><button id="refreshSpkBtn" class="ghost" type="button">刷新说话人</button> <button id="clearBtn" class="ghost" type="button">恢复到讯飞原有版本</button></div>
   </aside>
 </div>
 
+<div id="spkMenu" class="ctx" style="min-width:160px;"></div>
 <div id="ctxMenu" class="ctx">
   <button type="button" data-act="copySel" id="ctxCopySel">复制所选</button>
   <button type="button" data-act="copyOne">复制本行</button>
@@ -389,7 +391,7 @@
       startEdit(u, {x:e.clientX, y:e.clientY});
     });
     eBtn.addEventListener('click', function(e){ e.stopPropagation(); startEdit(u); });
-    sEl.addEventListener('dblclick', function(e){ e.stopPropagation(); startSpkEdit(u); });
+    sEl.addEventListener('click', function(e){ e.stopPropagation(); openSpkMenu(u, sEl); });
     utts.push(u);
     return row;
   }
@@ -613,7 +615,7 @@
   }
 
   // ---------- 批量删除 + 格式刷 ----------
-  let brushNum=null, dragKind=null;
+  let brushNum=null, dragKind=null, dragAdditive=false;
   let dragMoved=false, dragAnchorIdx=-1, dragStartRow=null, dragRows=[];
   const selectedRows = new Set();
   function selectRow(r){ if(!r) return; r.classList.add('selected'); selectedRows.add(r); }
@@ -678,7 +680,7 @@
     const idx=dragRows.indexOf(row); if(idx<0) return;
     if (idx!==dragAnchorIdx) dragMoved=true;
     const a=Math.min(dragAnchorIdx,idx), b=Math.max(dragAnchorIdx,idx);
-    clearSelection();
+    if (!dragAdditive) clearSelection();
     for(let i=a;i<=b;i++) selectRow(dragRows[i]);
     updateBatchBar();
   }
@@ -699,32 +701,56 @@
     if (speed!==0){ listEl.scrollTop += speed; if (dragKind==='batch') updateBatchAt(lastPX,lastPY); else updateBrushAt(lastPX,lastPY); }
     scrollRAF = requestAnimationFrame(autoScrollStep);
   }
-  let pendingDrag = null;
-  function beginDrag(kind, row, x, y){
+  let pendingDrag = null, dragEndedAt = 0;
+  function beginDrag(kind, row, x, y, additive){
     dragRows = Array.prototype.slice.call(listEl.querySelectorAll('.entry'));
     dragAnchorIdx = dragRows.indexOf(row); dragStartRow = row; dragMoved=false;
+    dragAdditive = !!additive;
     dragKind = kind; lastPX=x; lastPY=y;
     stopAutoScroll(); scrollRAF=requestAnimationFrame(autoScrollStep);
   }
+  document.addEventListener('click', function(e){
+    // 拖选/加选后紧跟的 click（无论点在行上还是空白处）都忽略
+    if (suppressClick || Date.now() - dragEndedAt < 300){
+      suppressClick = false;
+      e.stopPropagation();
+      return;
+    }
+    if (selectedRows.size === 0) return;
+    if (e.target.closest && (e.target.closest('#batchBar') || e.target.closest('aside'))) return;
+    const row = e.target.closest ? e.target.closest('.entry') : null;
+    clearSelection();
+    if (row) e.stopPropagation();
+  }, true);
+
   listEl.addEventListener('mousedown', function(e){
     if (e.button !== 0) return;
     const row = e.target.closest ? e.target.closest('.entry') : null;
     if (!row || !row._u) return;
+    const additive = (e.ctrlKey || e.metaKey) && brushNum === null && !splitArmed && row.dataset.editing !== '1';
+    if (additive){
+      e.preventDefault();
+      suppressClick = true;
+      setTimeout(function(){ suppressClick = false; }, 400);
+      pendingDrag = { row: row, x: e.clientX, y: e.clientY, additive: true };
+      return;
+    }
     if (brushNum !== null){
       beginDrag('brush', row, e.clientX, e.clientY);
       applyBrushTo(row._u);
       return;
     }
     if (splitArmed || row.dataset.editing === '1') return;
-    pendingDrag = { row: row, x: e.clientX, y: e.clientY };
+    pendingDrag = { row: row, x: e.clientX, y: e.clientY, additive: false };
   });
   listEl.addEventListener('mousemove', function(e){
     if (pendingDrag && !dragKind){
       if (Math.abs(e.clientY - pendingDrag.y) > 6 || Math.abs(e.clientX - pendingDrag.x) > 25){
         e.preventDefault();
         suppressClick = true;
+        setTimeout(function(){ suppressClick = false; }, 400);
         try { window.getSelection().removeAllRanges(); } catch(_){}
-        beginDrag('batch', pendingDrag.row, pendingDrag.x, pendingDrag.y);
+        beginDrag('batch', pendingDrag.row, pendingDrag.x, pendingDrag.y, pendingDrag.additive);
         pendingDrag = null;
         updateBatchAt(e.clientX, e.clientY);
       }
@@ -734,14 +760,41 @@
     if (dragKind==='batch') updateBatchAt(e.clientX,e.clientY); else updateBrushAt(e.clientX,e.clientY);
   });
   document.addEventListener('mouseup', function(){
+    const pd = pendingDrag;
     pendingDrag = null;
-    if (!dragKind) return;
+    if (!dragKind){
+      if (pd && pd.additive){
+        toggleRowSel(pd.row);
+        suppressClick = true;
+        setTimeout(function(){ suppressClick = false; }, 400);
+        updateBatchBar();
+      }
+      return;
+    }
     const kind=dragKind; dragKind=null; stopAutoScroll();
-    if (kind==='batch'){ if (!dragMoved && dragStartRow) toggleRowSel(dragStartRow); updateBatchBar(); }
-    else save();
+    if (kind==='batch'){
+      dragEndedAt = Date.now();
+      suppressClick = true;
+      setTimeout(function(){ suppressClick = false; }, 400);
+      updateBatchBar();
+    } else save();
   });
 
   // ---------- 说话人对照 ----------
+  function assignSelectedTo(spk){
+    const rows = selectedRows.size ? Array.from(selectedRows) : (utts[activeIdx] ? [utts[activeIdx].el] : []);
+    if (!rows.length){ alert('先在左侧拖选或 Ctrl/⌘ 单击选中要设置的行'); return; }
+    pushUndo();
+    rows.forEach(function(r){
+      const u = r._u; if (!u) return;
+      u.it.spk = spk;
+      delete u.it.name;
+      u.spkEl.textContent = nameOf(spk);
+      u.el.classList.add('edited');
+    });
+    save();
+    buildSpkPanel();
+  }
   function buildSpkPanel(){
     spkList.innerHTML='';
     Object.keys(S.names).sort(function(a,b){ return (parseInt(a,10)||0)-(parseInt(b,10)||0); }).forEach(function(spk){
@@ -750,28 +803,57 @@
       lab.textContent = /^\d+$/.test(spk) ? ('说话人'+spk) : spk;
       const inp=document.createElement('input'); inp.className='spk-input'; inp.value=S.names[spk]||''; inp.placeholder='别名';
       inp.addEventListener('keydown', function(ev){ if (ev.key==='Enter'){ ev.preventDefault(); applyAlias(spk, inp.value); } });
-      const rep=document.createElement('button'); rep.type='button'; rep.className='mini'; rep.textContent='替换'; rep.title='把左侧该发言人的这一栏替换为别名';
+      const rep=document.createElement('button'); rep.type='button'; rep.className='mini'; rep.textContent='改名'; rep.title='把该发言人的所有条目改成这个别名';
       rep.addEventListener('click', function(e){ e.stopPropagation(); applyAlias(spk, inp.value); });
-      const br=document.createElement('button'); br.type='button'; br.className='mini'; br.textContent='刷'; br.dataset.brush=spk; br.title='点一下，再在左侧拖选刷发言人';
-      br.addEventListener('click', function(e){ e.stopPropagation(); setBrush(brushNum===spk?null:spk); });
-      r.append(lab, inp, rep, br);
+      const setb=document.createElement('button'); setb.type='button'; setb.className='mini'; setb.textContent='设为'; setb.title='把选中的行设为该发言人';
+      setb.addEventListener('click', function(e){ e.stopPropagation(); assignSelectedTo(spk); });
+      r.append(lab, inp, rep, setb);
       spkList.appendChild(r);
     });
+
+    // 底部：新增发言人
+    const fr = document.createElement('div'); fr.className = 'spk-row spk-new';
+    const flab = document.createElement('span'); flab.className = 'spk-lab'; flab.textContent = '新增';
+    const finp = document.createElement('input'); finp.className = 'spk-input'; finp.placeholder = '新发言人名字';
+    const fbtn = document.createElement('button'); fbtn.type = 'button'; fbtn.className = 'mini'; fbtn.textContent = '设为';
+    function applyNew(){
+      const nm = finp.value.trim();
+      if (!nm) return;
+      if (!(nm in S.names)) S.names[nm] = nm;
+      const rows = selectedRows.size ? Array.from(selectedRows) : (utts[activeIdx] ? [utts[activeIdx].el] : []);
+      if (rows.length){
+        pushUndo();
+        rows.forEach(function(r){
+          const u = r._u; if (!u) return;
+          u.it.spk = nm; delete u.it.name;
+          u.spkEl.textContent = nameOf(nm);
+          u.el.classList.add('edited');
+        });
+        save();
+      }
+      buildSpkPanel();
+    }
+    fbtn.addEventListener('click', function(e){ e.stopPropagation(); applyNew(); });
+    finp.addEventListener('keydown', function(e){ if (e.key === 'Enter'){ e.preventDefault(); applyNew(); } });
+    fr.append(flab, finp, fbtn);
+    spkList.appendChild(fr);
   }
   function applyAlias(spk, v){
     v = (v||'').trim();
     if (!v) return;
     pushUndo();
-    S.names[spk] = v;
-    utts.forEach(function(u){
-      if (String(u.it.spk)===String(spk)){
-        if (u.it.name) delete u.it.name;
-        u.spkEl.textContent = v;
-      }
-    });
+    if (String(spk) === v){
+      S.names[spk] = v;
+    } else {
+      // 真正改名：把该发言人的所有条目改到新名字，侧栏标签/输入框一起刷新
+      S.items.forEach(function(it){
+        if (String(it.spk) === String(spk)){ it.spk = v; delete it.name; }
+      });
+      delete S.names[spk];
+      S.names[v] = v;
+    }
     save();
-    buildSpkPanel();
-    if (utts[activeIdx] && String(utts[activeIdx].it.spk)===String(spk)) updateNow(activeIdx);
+    renderAll();
   }
   // 刷新说话人：按“当前显示的姓名/别名”重新归并，清掉改名过程中产生的重复、空条目
   function refreshSpeakers(){
@@ -836,6 +918,7 @@
     copyText(text);
   }
   listEl.addEventListener('contextmenu', function(e){
+    if (e.ctrlKey) { e.preventDefault(); return; }
     if (brushNum!==null) return;
     const row = e.target.closest ? e.target.closest('.entry') : null;
     if (!row) return;
@@ -858,6 +941,46 @@
     else if (act==='delete') doDelete(u);
   });
   document.addEventListener('click', function(e){ if (!ctxMenu.contains(e.target)) hideCtx(); });
+
+  // ---------- 发言人菜单（点标签弹出） ----------
+  const spkMenu = $('spkMenu');
+  function hideSpkMenu(){ spkMenu.classList.remove('open'); }
+  function assignSpeaker(u, spk){
+    if (!u) return;
+    pushUndo();
+    u.it.spk = spk;
+    delete u.it.name;
+    u.spkEl.textContent = nameOf(spk);
+    u.el.classList.add('edited');
+    save();
+    buildSpkPanel();
+  }
+  function openSpkMenu(u, anchorEl){
+    spkMenu.innerHTML = '';
+    Object.keys(S.names).forEach(function(spk){
+      const b = document.createElement('button');
+      b.textContent = (String(spk) === String(u.it.spk) ? '✓ ' : '') + (S.names[spk] || spk);
+      b.addEventListener('click', function(e){ e.stopPropagation(); hideSpkMenu(); assignSpeaker(u, spk); });
+      spkMenu.appendChild(b);
+    });
+    const nb = document.createElement('button');
+    nb.textContent = '＋ 新建发言人…';
+    nb.addEventListener('click', function(e){
+      e.stopPropagation(); hideSpkMenu();
+      const v = window.prompt('新发言人名字', '');
+      if (v === null) return;
+      const nm = v.trim();
+      if (!nm) return;
+      if (!(nm in S.names)) S.names[nm] = nm;
+      assignSpeaker(u, nm);
+    });
+    spkMenu.appendChild(nb);
+    const r = anchorEl.getBoundingClientRect();
+    spkMenu.style.left = Math.max(8, Math.min(window.innerWidth - 180, r.left)) + 'px';
+    spkMenu.style.top = Math.min(window.innerHeight - 20, r.bottom + 4) + 'px';
+    spkMenu.classList.add('open');
+  }
+  document.addEventListener('click', function(e){ if (!spkMenu.contains(e.target)) hideSpkMenu(); });
   document.addEventListener('keydown', function(e){ if (e.key==='Escape'){ hideCtx(); setBrush(null); } });
 
   // ---------- 导出 ----------
