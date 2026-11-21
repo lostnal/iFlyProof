@@ -139,27 +139,34 @@ server.log
 
 这个功能依赖 [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx)，全程本地 CPU 运行，不需要 GPU、不上传音频。
 
-### 一键安装（推荐，不用命令行）
+### 首次使用：自动准备（推荐）
 
-- **macOS**：双击 **`setup-diarization.command`**；
-- **Windows**：双击 **`setup-diarization.bat`**。
+从 release 包下载的版本**已内置两个模型**（`assets/`），不需要手动下载。
 
-脚本会自动：
+1. 启动应用，导入音频；
+2. 点 **“自动分说话人”**；
+3. 首次会自动创建 `_diarvenv`、安装 `sherpa-onnx` / `numpy`（约 1–2 分钟），页面底部显示进度；
+4. 准备完成后会**自动继续**分离，不需要再点一次。
 
-1. 创建 `_diarvenv` 虚拟环境；
-2. 安装 `sherpa-onnx`、`numpy`；
-3. 下载分割模型（约 7MB）和 CAM++ 向量模型（约 27MB）。
+> 准备过程需要联网（pip 安装依赖）；模型已随包内置，不再从 GitHub 下载。
 
-看到“完成”即可，以后不需要再装。
+### 手动安装（可选 / 离线）
 
-### 手动安装（备选）
+如果自动准备失败，或想提前装好，可以双击：
+
+- **macOS**：`setup-diarization.command`
+- **Windows**：`setup-diarization.bat`
+
+它们会优先使用 `assets/` 里的内置模型，没有才联网下载。
+
+### 手动安装（命令行）
 
 ```bash
 python3 -m venv _diarvenv
 _diarvenv/bin/pip install -r requirements-diarization.txt
 ```
 
-模型目录：
+模型目录（release 包自带；源码克隆需自行放入或运行上面的脚本）：
 
 ```
 _diarmodels/
@@ -168,15 +175,13 @@ _diarmodels/
     └── model.onnx
 ```
 
-下载地址：
+下载地址（仅在没有 `assets/` 时需要）：
 
-- 分割模型（pyannote segmentation 3.0）：
+- 分割模型：
   <https://github.com/k2-fsa/sherpa-onnx/releases/download/speaker-segmentation-models/sherpa-onnx-pyannote-segmentation-3-0.tar.bz2>
-- 说话人向量模型（CAM++）：
+- 说话人向量模型：
   - GitHub：<https://github.com/k2-fsa/sherpa-onnx/releases/download/speaker-recongition-models/3dspeaker_speech_campplus_sv_zh-cn_16k-common.onnx>
   - 国内镜像：<https://hf-mirror.com/Luigi/campplus-zh-en-onnx/resolve/main/campplus_zh_en_fp32.onnx>
-
-把 CAM++ 重命名为 `campplus.onnx` 即可。
 
 ### 音频转换
 

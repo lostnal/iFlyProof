@@ -1406,6 +1406,55 @@
 
 
   // ---------- 自动分说话人（本地 sherpa-onnx，点按钮直接跑） ----------
+  async function waitSetup(){
+    while (true){
+      let st = null;
+      try { st = await (await fetch('/api/setup-status')).json(); } catch(e){}
+      if (st){
+        const pct = st.progress ? (' ' + st.progress + '%') : '';
+        nowEl.textContent = '准备本地环境：' + (st.message || st.step || '') + pct;
+        if (st.state === 'done') return true;
+        if (st.state === 'error') throw new Error(st.error || st.message || '环境准备失败');
+      }
+      await new Promise(function(r){ setTimeout(r, 2000); });
+    }
+  }
+  async function runDiarize(k, minutes){
+    const body = { url: S.audioUrl || '', duration: S.duration || 0, numSpeakers: k };
+    if (minutes > 0) body.maxSeconds = minutes * 60;
+    nowEl.textContent = '本地分离中…（可能要几分钟，请稍候）';
+    const res = await fetch('/api/diarize', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify(body)
+    });
+    const d = await res.json();
+    if (d.preparing){
+      await waitSetup();
+      return runDiarize(k, minutes);
+    }
+    if (!d.ok) throw new Error(d.error || '分离失败');
+    const segs = d.segments || [];
+    const names = {};
+    S.items.forEach(function(it, idx){
+      const st = it.t;
+      const en = (S.items[idx + 1] ? S.items[idx + 1].t : st + 30);
+      let best = null, bestOv = 0;
+      segs.forEach(function(sg){
+        const ov = Math.min(en, sg.end) - Math.max(st, sg.start);
+        if (ov > bestOv){ bestOv = ov; best = sg; }
+      });
+      if (best && bestOv > 0){
+        const key = 'D' + (best.spk + 1);
+        it.spk = key;
+        delete it.name;
+        names[key] = '说话人' + (best.spk + 1);
+      }
+    });
+    Object.keys(names).forEach(function(nm){ S.names[nm] = names[nm]; });
+    save(); renderAll();
+    nowEl.textContent = '自动分说话人完成：' + k + ' 位，共 ' + segs.length + ' 段。';
+  }
   async function autoDiarize(){
     if (!S.audioUrl && !S.duration){ alert('还没有音频'); return; }
     const kStr = window.prompt('预计有几位说话人？（2-10，默认 6）', '6');
@@ -1417,36 +1466,7 @@
     if (!confirm('自动分说话人会覆盖当前发言人标注，确定？')) return;
     try {
       $('diarBtn').disabled = true;
-      nowEl.textContent = '本地分离中…（可能要几分钟，请稍候）';
-      const body = { url: S.audioUrl || '', duration: S.duration || 0, numSpeakers: k };
-      if (minutes > 0) body.maxSeconds = minutes * 60;
-      const res = await fetch('/api/diarize', {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify(body)
-      });
-      const d = await res.json();
-      if (!d.ok) throw new Error(d.error || '分离失败');
-      const segs = d.segments || [];
-      const names = {};
-      S.items.forEach(function(it, idx){
-        const st = it.t;
-        const en = (S.items[idx + 1] ? S.items[idx + 1].t : st + 30);
-        let best = null, bestOv = 0;
-        segs.forEach(function(sg){
-          const ov = Math.min(en, sg.end) - Math.max(st, sg.start);
-          if (ov > bestOv){ bestOv = ov; best = sg; }
-        });
-        if (best && bestOv > 0){
-          const key = 'D' + (best.spk + 1);
-          it.spk = key;
-          delete it.name;
-          names[key] = '说话人' + (best.spk + 1);
-        }
-      });
-      Object.keys(names).forEach(function(nm){ S.names[nm] = names[nm]; });
-      save(); renderAll();
-      nowEl.textContent = '自动分说话人完成：' + k + ' 位，共 ' + segs.length + ' 段。';
+      await runDiarize(k, minutes);
     } catch(e){
       alert('自动分说话人失败：' + (e.message || e));
       nowEl.textContent = '';

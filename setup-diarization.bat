@@ -3,13 +3,13 @@ chcp 65001 >nul
 setlocal
 cd /d "%~dp0"
 
+echo == iFlyProof 说话人分离环境安装（可选） ==
+echo 一般不需要手动运行：首次点“自动分说话人”会自动准备。
+echo.
+
 set "PY=python"
 where python >nul 2>nul
 if errorlevel 1 set "PY=py -3"
-
-echo == iFlyProof 说话人分离环境安装 ==
-echo 这一步只需要做一次。
-echo.
 
 if not exist _diarvenv (
   echo 正在创建虚拟环境...
@@ -30,22 +30,33 @@ if errorlevel 1 (
 )
 
 if not exist _diarmodels mkdir _diarmodels
+if not exist _diarmodels\sherpa-onnx-pyannote-segmentation-3-0 mkdir _diarmodels\sherpa-onnx-pyannote-segmentation-3-0
 
 if not exist _diarmodels\sherpa-onnx-pyannote-segmentation-3-0\model.onnx (
-  echo 正在下载分割模型...
-  curl -L --retry 3 -o _diarmodels\seg.tar.bz2 "https://github.com/k2-fsa/sherpa-onnx/releases/download/speaker-segmentation-models/sherpa-onnx-pyannote-segmentation-3-0.tar.bz2"
-  tar xjf _diarmodels\seg.tar.bz2 -C _diarmodels
+  if exist assets\pyannote-segmentation-3-0.onnx (
+    echo 使用内置分割模型...
+    copy /Y assets\pyannote-segmentation-3-0.onnx _diarmodels\sherpa-onnx-pyannote-segmentation-3-0\model.onnx >nul
+  ) else (
+    echo 正在下载分割模型...
+    curl -L --retry 3 -o _diarmodels\seg.tar.bz2 "https://github.com/k2-fsa/sherpa-onnx/releases/download/speaker-segmentation-models/sherpa-onnx-pyannote-segmentation-3-0.tar.bz2"
+    tar xjf _diarmodels\seg.tar.bz2 -C _diarmodels
+  )
 )
 
 if not exist _diarmodels\campplus.onnx (
-  echo 正在下载说话人向量模型...
-  curl -L --retry 3 -o _diarmodels\campplus.onnx "https://hf-mirror.com/Luigi/campplus-zh-en-onnx/resolve/main/campplus_zh_en_fp32.onnx"
+  if exist assets\campplus.onnx (
+    echo 使用内置说话人向量模型...
+    copy /Y assets\campplus.onnx _diarmodels\campplus.onnx >nul
+  ) else (
+    echo 正在下载说话人向量模型...
+    curl -L --retry 3 -o _diarmodels\campplus.onnx "https://hf-mirror.com/Luigi/campplus-zh-en-onnx/resolve/main/campplus_zh_en_fp32.onnx"
+  )
 )
 
 echo.
 if exist _diarmodels\sherpa-onnx-pyannote-segmentation-3-0\model.onnx if exist _diarmodels\campplus.onnx (
   echo 完成！现在可以双击 iFlyProof.bat 启动。
 ) else (
-  echo 还有模型没下载完，请检查网络后重新运行本文件。
+  echo 还有模型没准备好，请检查网络后重新运行本文件。
 )
 pause
